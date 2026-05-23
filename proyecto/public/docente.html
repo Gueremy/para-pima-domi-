@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Docente - Disponibilidad Docente</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="/" class="navbar-brand">Disponibilidad Docente</a>
+      <ul class="navbar-links">
+        <li>
+          Tickets pendientes:
+          <span class="counter-badge" id="pendientes-count">0</span>
+        </li>
+        <li style="display:flex;align-items:center;gap:0.5rem">
+          <div class="avatar" id="docente-avatar" style="display:inline-flex;width:32px;height:32px;font-size:0.85rem"></div>
+          <span id="nav-username" style="color:var(--text-muted);font-size:0.9rem"></span>
+        </li>
+        <li><a href="#" id="btn-logout" class="btn-nav" style="background:var(--secondary)">Salir</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">Panel Docente</h1>
+
+    <!-- Disponibilidad -->
+    <div class="section">
+      <div class="card" style="max-width:420px">
+        <h3 class="section-title">Mi Disponibilidad</h3>
+        <div class="toggle-wrapper">
+          <span class="toggle-label" id="disponibilidad-label">Cargando...</span>
+          <label class="toggle">
+            <input type="checkbox" id="disponibilidad-toggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <p style="font-size:0.85rem;color:var(--text-muted)">
+          Al activar tu disponibilidad, se notificara por email a los estudiantes que te siguen.
+        </p>
+      </div>
+    </div>
+
+    <!-- Tickets + Horarios + Perfil -->
+    <div class="section">
+      <div style="margin-bottom:1rem">
+        <input type="text" id="ticket-search" class="form-control" placeholder="Buscar en tickets por estudiante o asignatura..." />
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="pendientes">Pendientes <span class="counter-badge" id="tab-pendientes-count" style="background:var(--warning)">0</span></button>
+        <button class="tab-btn" data-tab="respondidos">Respondidos</button>
+        <button class="tab-btn" data-tab="resueltos">Resueltos</button>
+        <button class="tab-btn" data-tab="horarios">Horarios</button>
+        <button class="tab-btn" data-tab="perfil">Mi Perfil</button>
+      </div>
+
+      <div class="tab-pane active" id="tab-pendientes">
+        <div id="pendientes-loading" style="text-align:center;padding:2rem;color:var(--text-muted)">Cargando...</div>
+        <div id="pendientes-list" class="ticket-list" style="display:none"></div>
+        <div id="pendientes-empty" class="empty-state" style="display:none">
+          <strong>Sin tickets pendientes</strong>
+          <p>No tienes consultas sin responder.</p>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="tab-respondidos">
+        <div id="respondidos-list" class="ticket-list"></div>
+        <div id="respondidos-empty" class="empty-state" style="display:none">
+          <strong>Sin tickets respondidos</strong>
+        </div>
+      </div>
+
+      <div class="tab-pane" id="tab-resueltos">
+        <div id="resueltos-list" class="ticket-list"></div>
+        <div id="resueltos-empty" class="empty-state" style="display:none">
+          <strong>Sin tickets resueltos</strong>
+        </div>
+      </div>
+
+      <!-- Horarios Tab -->
+      <div class="tab-pane" id="tab-horarios">
+        <h2 class="section-title">Mis Horarios de Disponibilidad</h2>
+        <p style="color:var(--text-muted);margin-bottom:1rem">Define cuándo estás disponible para consultas.</p>
+        <div id="horarios-list" style="margin-bottom:1.5rem"></div>
+        <div class="card" style="padding:1.25rem">
+          <h3 style="font-size:1rem;margin-bottom:1rem">Agregar horario</h3>
+          <div id="horarios-alert"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0.75rem;align-items:end">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Día</label>
+              <select id="horario-dia" class="form-control">
+                <option value="Lunes">Lunes</option>
+                <option value="Martes">Martes</option>
+                <option value="Miércoles">Miércoles</option>
+                <option value="Jueves">Jueves</option>
+                <option value="Viernes">Viernes</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Desde</label>
+              <input type="time" id="horario-inicio" class="form-control" value="09:00" />
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">Hasta</label>
+              <input type="time" id="horario-fin" class="form-control" value="11:00" />
+            </div>
+            <button class="btn btn-primary" id="btn-add-horario" style="height:42px">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mi Perfil Tab -->
+      <div class="tab-pane" id="tab-perfil">
+        <h2 class="section-title">Mi Perfil</h2>
+        <div id="perfil-alert"></div>
+        <form id="perfil-form" style="max-width:520px">
+          <div class="form-group">
+            <label class="form-label">Nombre completo</label>
+            <input type="text" id="perfil-nombre" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Carrera</label>
+            <input type="text" id="perfil-carrera" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Asignatura</label>
+            <input type="text" id="perfil-asignatura" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descripción (part-time)</label>
+            <textarea id="perfil-descripcion" class="form-control" placeholder="Ej: Disponible lunes y miércoles..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Biografía</label>
+            <textarea id="perfil-bio" class="form-control" placeholder="Descripción profesional..." rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ramos que imparte</label>
+            <input type="text" id="perfil-ramos" class="form-control" placeholder="Ej: Programación Web, Bases de Datos" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Certificados / Títulos</label>
+            <input type="text" id="perfil-certificados" class="form-control" placeholder="Ej: Magíster, Certificación AWS" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono de contacto</label>
+            <input type="text" id="perfil-telefono" class="form-control" placeholder="+56 9 ..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Oficina</label>
+            <input type="text" id="perfil-oficina" class="form-control" placeholder="Ej: Edificio A, Oficina 302" />
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;gap:0.75rem">
+            <input type="checkbox" id="perfil-part-time" style="width:1.2rem;height:1.2rem" />
+            <label for="perfil-part-time" class="form-label" style="margin:0">Soy docente part-time</label>
+          </div>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Respuesta -->
+  <div class="modal-overlay" id="respuesta-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Responder Ticket</span>
+        <button class="modal-close" id="close-respuesta-modal">&times;</button>
+      </div>
+      <input type="hidden" id="ticket-id-respuesta" />
+      <div id="respuesta-alert"></div>
+
+      <div class="form-group">
+        <label class="form-label">Tipo de respuesta</label>
+        <select id="tipo-respuesta" class="form-control">
+          <option value="resuelto">Marcar como resuelto</option>
+          <option value="respuesta">Responder consulta</option>
+          <option value="reunion">Coordinar reunion</option>
+        </select>
+      </div>
+
+      <div id="respuesta-text-group" class="form-group" style="display:none">
+        <label class="form-label" id="respuesta-text-label">Respuesta</label>
+        <textarea id="respuesta-texto" class="form-control" placeholder="Escribe tu respuesta..."></textarea>
+      </div>
+
+      <button class="btn btn-primary" id="submit-respuesta" style="width:100%">Enviar Respuesta</button>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/docente.js"></script>
+</body>
+</html>

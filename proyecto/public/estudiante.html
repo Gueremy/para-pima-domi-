@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Estudiante - Disponibilidad Docente</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="/" class="navbar-brand">Disponibilidad Docente</a>
+      <ul class="navbar-links">
+        <li><a href="/">Buscar Docentes</a></li>
+        <li><span id="nav-username" style="color:var(--text-muted);font-size:0.9rem"></span></li>
+        <li><a href="#" id="btn-logout" class="btn-nav" style="background:var(--secondary)">Salir</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">Mi Panel</h1>
+    <p class="page-subtitle">Gestiona tus tickets y consultas con los docentes.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="nuevo">Nuevo Ticket</button>
+      <button class="tab-btn" data-tab="mis-tickets">Mis Tickets</button>
+      <button class="tab-btn" data-tab="docentes">Docentes</button>
+      <button class="tab-btn" data-tab="mi-perfil">Mi Perfil</button>
+    </div>
+
+    <!-- Nuevo Ticket -->
+    <div class="tab-pane active" id="tab-nuevo">
+      <div class="card" style="max-width:520px">
+        <h3 class="section-title">Enviar Consulta</h3>
+        <div id="nuevo-alert"></div>
+        <form id="ticket-form">
+          <div class="form-group">
+            <label class="form-label">Docente</label>
+            <select id="docente-select" class="form-control" required>
+              <option value="">Selecciona un docente...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tipo de consulta</label>
+            <select id="tipo-select" class="form-control" required>
+              <option value="presencial">Presencial</option>
+              <option value="escrita">Escrita</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mensaje</label>
+            <textarea id="mensaje-input" class="form-control" placeholder="Describe tu consulta..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Enviar Ticket</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Mis Tickets -->
+    <div class="tab-pane" id="tab-mis-tickets">
+      <div id="tickets-loading" style="text-align:center;padding:2rem;color:var(--text-muted)">Cargando tickets...</div>
+      <div id="tickets-list" class="ticket-list" style="display:none"></div>
+      <div id="tickets-empty" class="empty-state" style="display:none">
+        <strong>No tienes tickets aun</strong>
+        <p>Envia tu primera consulta desde la pestana "Nuevo Ticket".</p>
+      </div>
+    </div>
+
+    <!-- Docentes Tab -->
+    <div class="tab-pane" id="tab-docentes">
+      <h2 class="section-title">Docentes y Disponibilidad</h2>
+      <div class="search-bar" style="margin-bottom:1.5rem">
+        <input type="text" id="est-search-nombre" placeholder="Buscar docente..." />
+        <select id="est-filter-carrera"><option value="">Todas las carreras</option></select>
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="est-filter-disponible" />
+          Solo disponibles
+        </label>
+      </div>
+      <div id="est-docentes-loading" style="color:var(--text-muted)">Cargando...</div>
+      <div class="cards-grid" id="est-docentes-grid" style="display:none"></div>
+      <div id="est-docentes-empty" class="empty-state" style="display:none">
+        <strong>No se encontraron docentes</strong>
+      </div>
+    </div>
+
+    <!-- Mi Perfil Tab -->
+    <div class="tab-pane" id="tab-mi-perfil">
+      <div class="card" style="max-width:520px">
+        <h3 class="section-title">Mi Perfil</h3>
+        <div id="est-perfil-alert"></div>
+        <form id="est-perfil-form">
+          <div class="form-group">
+            <label class="form-label">Carrera</label>
+            <input type="text" id="est-perfil-carrera" class="form-control" placeholder="Ej: Ingeniería Informática" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Año en curso</label>
+            <input type="text" id="est-perfil-anio" class="form-control" placeholder="Ej: 3" />
+          </div>
+          <button type="submit" class="btn btn-primary">Guardar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mini Ticket Modal (from docentes tab) -->
+  <div class="modal-overlay" id="mini-ticket-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Enviar Ticket</span>
+        <button class="modal-close" id="close-mini-ticket-modal">&times;</button>
+      </div>
+      <div id="mini-ticket-alert"></div>
+      <div class="form-group">
+        <label class="form-label">Docente</label>
+        <input type="text" id="mini-ticket-docente-nombre" class="form-control" readonly />
+        <input type="hidden" id="mini-ticket-docente-id" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo de consulta</label>
+        <select id="mini-ticket-tipo" class="form-control">
+          <option value="presencial">Presencial</option>
+          <option value="escrita">Escrita</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mensaje</label>
+        <textarea id="mini-ticket-mensaje" class="form-control" placeholder="Describe tu consulta..."></textarea>
+      </div>
+      <button class="btn btn-primary" id="submit-mini-ticket" style="width:100%">Enviar Ticket</button>
+    </div>
+  </div>
+
+  <!-- Modal Perfil Docente (shared) -->
+  <div class="modal-overlay" id="perfil-modal">
+    <div class="modal" style="max-width:540px">
+      <div class="modal-header">
+        <span class="modal-title">Perfil Docente</span>
+        <button class="modal-close" id="close-perfil-modal">&times;</button>
+      </div>
+      <div id="perfil-modal-content">
+        <div style="display:flex;gap:1.25rem;align-items:center;margin-bottom:1.25rem">
+          <div class="avatar avatar-lg" id="perfil-modal-avatar"></div>
+          <div>
+            <h2 id="perfil-modal-nombre" style="font-size:1.3rem;font-weight:700"></h2>
+            <div id="perfil-modal-carrera" style="color:var(--text-muted);font-size:0.9rem"></div>
+            <div id="perfil-modal-badges" style="margin-top:0.4rem;display:flex;gap:0.4rem;flex-wrap:wrap"></div>
+          </div>
+        </div>
+        <div id="perfil-modal-bio" style="margin-bottom:1rem;font-size:0.95rem;color:var(--text)"></div>
+        <div id="perfil-modal-ramos-section" style="margin-bottom:0.75rem">
+          <strong style="font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Ramos</strong>
+          <div id="perfil-modal-ramos" style="margin-top:0.3rem;font-size:0.9rem"></div>
+        </div>
+        <div id="perfil-modal-certs-section" style="margin-bottom:0.75rem">
+          <strong style="font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Certificados</strong>
+          <div id="perfil-modal-certs" style="margin-top:0.3rem;font-size:0.9rem"></div>
+        </div>
+        <div id="perfil-modal-horarios-section" style="margin-bottom:0.75rem">
+          <strong style="font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Horarios de disponibilidad</strong>
+          <div id="perfil-modal-horarios" class="horarios-mini" style="margin-top:0.4rem"></div>
+        </div>
+        <div id="perfil-modal-contacto" style="margin-bottom:1rem;font-size:0.9rem;color:var(--text-muted)"></div>
+        <div id="perfil-modal-actions" style="display:flex;gap:0.75rem;flex-wrap:wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/shared.js"></script>
+  <script src="/js/estudiante.js"></script>
+</body>
+</html>

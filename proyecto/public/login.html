@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iniciar Sesion - Disponibilidad Docente</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="/" class="navbar-brand">Disponibilidad Docente</a>
+    </div>
+  </nav>
+
+  <div class="auth-container">
+    <!-- Login -->
+    <div id="login-section" class="auth-card">
+      <h2 class="auth-title">Iniciar Sesion</h2>
+      <div id="login-alert"></div>
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label">Correo institucional</label>
+          <input type="email" id="login-email" class="form-control" placeholder="usuario@universidad.cl" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contrasena</label>
+          <input type="password" id="login-password" class="form-control" placeholder="••••••" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Ingresar</button>
+      </form>
+      <div class="auth-switch" style="margin-top:0.5rem">
+        <a href="/reset.html" style="font-size:0.85rem;color:var(--text-muted)">Olvidaste tu contrasena?</a>
+      </div>
+      <div class="auth-switch">
+        No tienes cuenta? <a id="show-register">Registrarse</a>
+      </div>
+      <a href="/" class="guest-btn">Entrar como invitado (sin cuenta)</a>
+    </div>
+
+    <!-- Register -->
+    <div id="register-section" class="auth-card" style="display:none">
+      <h2 class="auth-title">Crear Cuenta</h2>
+      <div id="register-alert"></div>
+      <form id="register-form">
+        <div class="form-group">
+          <label class="form-label">Nombre completo</label>
+          <input type="text" id="reg-nombre" class="form-control" placeholder="Tu nombre" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo institucional</label>
+          <input type="email" id="reg-email" class="form-control" placeholder="usuario@universidad.cl" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contrasena</label>
+          <input type="password" id="reg-password" class="form-control" placeholder="••••••" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Soy</label>
+          <select id="reg-rol" class="form-control">
+            <option value="estudiante">Estudiante</option>
+            <option value="docente">Docente</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Registrarme</button>
+      </form>
+      <div class="auth-switch">
+        Ya tienes cuenta? <a id="show-login">Iniciar sesion</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Admin - Disponibilidad Docente</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="/" class="navbar-brand">Disponibilidad Docente</a>
+      <ul class="navbar-links">
+        <li><span id="nav-username" style="color:var(--text-muted);font-size:0.9rem"></span></li>
+        <li><a href="#" id="btn-logout" class="btn-nav" style="background:var(--secondary)">Salir</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">Panel de Administracion</h1>
+    <p class="page-subtitle">Gestiona usuarios y visualiza estadisticas del sistema.</p>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem">
+      <div class="card" style="text-align:center;padding:1.25rem">
+        <div style="font-size:2rem;font-weight:700;color:var(--primary)" id="stat-users">-</div>
+        <div style="color:var(--text-muted);font-size:0.85rem">Total usuarios</div>
+      </div>
+      <div class="card" style="text-align:center;padding:1.25rem">
+        <div style="font-size:2rem;font-weight:700;color:var(--primary)" id="stat-docentes">-</div>
+        <div style="color:var(--text-muted);font-size:0.85rem">Docentes</div>
+      </div>
+      <div class="card" style="text-align:center;padding:1.25rem">
+        <div style="font-size:2rem;font-weight:700;color:var(--primary)" id="stat-estudiantes">-</div>
+        <div style="color:var(--text-muted);font-size:0.85rem">Estudiantes</div>
+      </div>
+      <div class="card" style="text-align:center;padding:1.25rem">
+        <div style="font-size:2rem;font-weight:700;color:var(--primary)" id="stat-tickets">-</div>
+        <div style="color:var(--text-muted);font-size:0.85rem">Tickets totales</div>
+      </div>
+      <div class="card" style="text-align:center;padding:1.25rem">
+        <div style="font-size:2rem;font-weight:700;color:var(--warning)" id="stat-pending">-</div>
+        <div style="color:var(--text-muted);font-size:0.85rem">Tickets pendientes</div>
+      </div>
+    </div>
+
+    <!-- Users table -->
+    <div class="card">
+      <h2 class="section-title">Usuarios del sistema</h2>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border)">
+              <th style="text-align:left;padding:0.5rem 0.75rem;color:var(--text-muted);font-weight:600">Nombre</th>
+              <th style="text-align:left;padding:0.5rem 0.75rem;color:var(--text-muted);font-weight:600">Email</th>
+              <th style="text-align:left;padding:0.5rem 0.75rem;color:var(--text-muted);font-weight:600">Rol</th>
+              <th style="text-align:left;padding:0.5rem 0.75rem;color:var(--text-muted);font-weight:600">Registro</th>
+              <th style="text-align:left;padding:0.5rem 0.75rem;color:var(--text-muted);font-weight:600">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="usuarios-tbody">
+            <tr><td colspan="5" style="padding:1rem;text-align:center;color:var(--text-muted)">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recuperar Contrasena - Disponibilidad Docente</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="/" class="navbar-brand">Disponibilidad Docente</a>
+    </div>
+  </nav>
+
+  <div class="auth-container">
+    <!-- Request form (no token in URL) -->
+    <div id="request-section" class="auth-card" style="display:none">
+      <h2 class="auth-title">Recuperar Contrasena</h2>
+      <p style="color:var(--text-muted);margin-bottom:1rem;font-size:0.9rem">
+        Ingresa tu correo institucional y te enviaremos un enlace para restablecer tu contrasena.
+      </p>
+      <div id="request-alert"></div>
+      <form id="request-form">
+        <div class="form-group">
+          <label class="form-label">Correo institucional</label>
+          <input type="email" id="request-email" class="form-control" placeholder="usuario@universidad.cl" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Enviar enlace</button>
+      </form>
+      <div class="auth-switch" style="margin-top:1rem">
+        <a href="/login.html">Volver al inicio de sesion</a>
+      </div>
+    </div>
+
+    <!-- Reset form (token in URL) -->
+    <div id="confirm-section" class="auth-card" style="display:none">
+      <h2 class="auth-title">Nueva Contrasena</h2>
+      <div id="confirm-alert"></div>
+      <form id="confirm-form">
+        <div class="form-group">
+          <label class="form-label">Nueva contrasena (minimo 6 caracteres)</label>
+          <input type="password" id="confirm-password" class="form-control" placeholder="••••••" required minlength="6" />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Restablecer contrasena</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+
+      function showAlert(containerId, message, type) {
+        const el = document.getElementById(containerId);
+        if (el) el.innerHTML = `<div class="alert alert-${type || 'error'}">${message}</div>`;
+      }
+
+      if (token) {
+        document.getElementById('confirm-section').style.display = 'block';
+        document.getElementById('confirm-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const password = document.getElementById('confirm-password').value;
+          const res = await fetch('/api/reset/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, password }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            showAlert('confirm-alert', data.error);
+            return;
+          }
+          showAlert('confirm-alert', 'Contrasena restablecida. Redirigiendo...', 'success');
+          setTimeout(() => { window.location.href = '/login.html'; }, 1500);
+        });
+      } else {
+        document.getElementById('request-section').style.display = 'block';
+        document.getElementById('request-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const email = document.getElementById('request-email').value.trim();
+          const res = await fetch('/api/reset/request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            showAlert('request-alert', data.error);
+            return;
+          }
+          showAlert('request-alert', 'Si el correo existe en nuestro sistema, recibirás un enlace en tu bandeja de entrada.', 'success');
+          document.getElementById('request-form').reset();
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

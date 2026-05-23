@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Disponibilidad Docente</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="/" class="navbar-brand">Disponibilidad Docente</a>
+      <ul class="navbar-links" id="nav-links">
+        <li><a href="/">Inicio</a></li>
+        <li id="nav-guest-login"><a href="/login.html">Iniciar Sesion</a></li>
+        <li id="nav-user" style="display:none">
+          <span id="nav-username" style="color:var(--text-muted);font-size:0.9rem"></span>
+        </li>
+        <li id="nav-panel" style="display:none">
+          <a href="#" id="nav-panel-link" class="btn-nav"></a>
+        </li>
+        <li id="nav-logout" style="display:none">
+          <a href="#" id="btn-logout" class="btn-nav" style="background:var(--secondary)">Salir</a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">Buscar Docentes</h1>
+    <p class="page-subtitle">Consulta la disponibilidad de los docentes y envia tickets de consulta.</p>
+
+    <div class="search-bar">
+      <input type="text" id="search-nombre" placeholder="Buscar por nombre..." />
+      <select id="filter-carrera">
+        <option value="">Todas las carreras</option>
+      </select>
+      <select id="filter-asignatura">
+        <option value="">Todas las asignaturas</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;white-space:nowrap">
+        <input type="checkbox" id="filter-disponible" />
+        Solo disponibles
+      </label>
+    </div>
+
+    <div id="loading" style="text-align:center;padding:2rem;color:var(--text-muted)">Cargando...</div>
+    <div class="cards-grid" id="docentes-grid" style="display:none"></div>
+    <div id="empty" class="empty-state" style="display:none">
+      <strong>No se encontraron docentes</strong>
+      <p>Intenta con otros filtros de busqueda.</p>
+    </div>
+  </div>
+
+  <!-- Modal Ticket -->
+  <div class="modal-overlay" id="ticket-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Enviar Ticket</span>
+        <button class="modal-close" id="close-ticket-modal">&times;</button>
+      </div>
+      <div id="ticket-form-alert"></div>
+      <div class="form-group">
+        <label class="form-label">Docente</label>
+        <input type="text" id="ticket-docente-nombre" class="form-control" readonly />
+        <input type="hidden" id="ticket-docente-id" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo de consulta</label>
+        <select id="ticket-tipo" class="form-control">
+          <option value="presencial">Presencial</option>
+          <option value="escrita">Escrita</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mensaje</label>
+        <textarea id="ticket-mensaje" class="form-control" placeholder="Describe tu consulta..."></textarea>
+      </div>
+      <button class="btn btn-primary" id="submit-ticket" style="width:100%">Enviar Ticket</button>
+    </div>
+  </div>
+
+  <!-- Modal Perfil Docente -->
+  <div class="modal-overlay" id="perfil-modal">
+    <div class="modal" style="max-width:540px">
+      <div class="modal-header">
+        <span class="modal-title">Perfil Docente</span>
+        <button class="modal-close" id="close-perfil-modal">&times;</button>
+      </div>
+      <div id="perfil-modal-content">
+        <div style="display:flex;gap:1.25rem;align-items:center;margin-bottom:1.25rem">
+          <div class="avatar avatar-lg" id="perfil-modal-avatar"></div>
+          <div>
+            <h2 id="perfil-modal-nombre" style="font-size:1.3rem;font-weight:700"></h2>
+            <div id="perfil-modal-carrera" style="color:var(--text-muted);font-size:0.9rem"></div>
+            <div id="perfil-modal-badges" style="margin-top:0.4rem;display:flex;gap:0.4rem;flex-wrap:wrap"></div>
+          </div>
+        </div>
+        <div id="perfil-modal-bio" style="margin-bottom:1rem;font-size:0.95rem;color:var(--text)"></div>
+        <div id="perfil-modal-ramos-section" style="margin-bottom:0.75rem">
+          <strong style="font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Ramos</strong>
+          <div id="perfil-modal-ramos" style="margin-top:0.3rem;font-size:0.9rem"></div>
+        </div>
+        <div id="perfil-modal-certs-section" style="margin-bottom:0.75rem">
+          <strong style="font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Certificados</strong>
+          <div id="perfil-modal-certs" style="margin-top:0.3rem;font-size:0.9rem"></div>
+        </div>
+        <div id="perfil-modal-horarios-section" style="margin-bottom:0.75rem">
+          <strong style="font-size:0.85rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Horarios de disponibilidad</strong>
+          <div id="perfil-modal-horarios" class="horarios-mini" style="margin-top:0.4rem"></div>
+        </div>
+        <div id="perfil-modal-contacto" style="margin-bottom:1rem;font-size:0.9rem;color:var(--text-muted)"></div>
+        <div id="perfil-modal-actions" style="display:flex;gap:0.75rem;flex-wrap:wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/shared.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>

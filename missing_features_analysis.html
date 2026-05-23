@@ -1,0 +1,207 @@
+
+<h2 class="sr-only">Análisis de funcionalidades faltantes comparado con sistemas similares de consultas universitarias</h2>
+
+<div style="padding:1rem 0">
+
+<div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap">
+  <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--color-text-danger)"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-background-danger);border:1.5px solid var(--color-border-danger);display:inline-block"></span> Crítico — rompe el sistema sin esto</div>
+  <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--color-text-warning)"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-background-warning);border:1.5px solid var(--color-border-warning);display:inline-block"></span> Importante — estándar en sistemas similares</div>
+  <div style="display:flex; align-items:center; gap:5px; font-size:11px; color:var(--color-text-secondary)"><span style="width:10px;height:10px;border-radius:50%;background:var(--color-background-secondary);border:1.5px solid var(--color-border-secondary);display:inline-block"></span> Nice to have</div>
+</div>
+
+<!-- Auth y seguridad -->
+<div style="margin-bottom:10px">
+  <div style="font-size:11px; font-weight:500; color:var(--color-text-secondary); letter-spacing:.5px; margin-bottom:6px; display:flex; align-items:center; gap:6px">
+    <i class="ti ti-lock" aria-hidden="true" style="font-size:13px"></i> AUTH Y SEGURIDAD
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px">
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-danger); background:var(--color-background-danger); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-danger);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-danger)">Recuperación de contraseña</div>
+        <div style="font-size:11px; color:var(--color-text-danger); opacity:.8">Sin esto el sistema queda inutilizable si olvidas la clave</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-danger); background:var(--color-background-danger); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-danger);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-danger)">Verificación de email</div>
+        <div style="font-size:11px; color:var(--color-text-danger); opacity:.8">Confirmar que el correo institucional es real antes de activar cuenta</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-tertiary); background:var(--color-background-secondary); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-secondary);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-primary)">Cerrar sesiones activas</div>
+        <div style="font-size:11px; color:var(--color-text-secondary)">Si el usuario cambia contraseña, invalidar otras sesiones</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-tertiary); background:var(--color-background-secondary); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-secondary);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-primary)">Límite de intentos de login</div>
+        <div style="font-size:11px; color:var(--color-text-secondary)">Rate limiting para evitar fuerza bruta</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tickets -->
+<div style="margin-bottom:10px">
+  <div style="font-size:11px; font-weight:500; color:var(--color-text-secondary); letter-spacing:.5px; margin-bottom:6px; display:flex; align-items:center; gap:6px">
+    <i class="ti ti-tickets" aria-hidden="true" style="font-size:13px"></i> SISTEMA DE TICKETS
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px">
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-danger); background:var(--color-background-danger); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-danger);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-danger)">Email confirmación al estudiante</div>
+        <div style="font-size:11px; color:var(--color-text-danger); opacity:.8">Acuso de recibo cuando se envía el ticket. Básico en cualquier sistema de soporte</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-warning); background:var(--color-background-warning); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-warning);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-warning)">Adjuntos en tickets</div>
+        <div style="font-size:11px; color:var(--color-text-warning); opacity:.8">Foto de ejercicio, PDF de trabajo. Muy útil para consultas académicas</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-warning); background:var(--color-background-warning); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-warning);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-warning)">Límite de tickets por docente</div>
+        <div style="font-size:11px; color:var(--color-text-warning); opacity:.8">Máx. N tickets pendientes simultáneos. Sin esto un docente puede colapsar</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-warning); background:var(--color-background-warning); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-warning);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-warning)">Recordatorio de ticket sin respuesta</div>
+        <div style="font-size:11px; color:var(--color-text-warning); opacity:.8">Email automático si el ticket lleva más de X días pendiente</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-warning); background:var(--color-background-warning); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-warning);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-warning)">Perfil del estudiante visible al docente</div>
+        <div style="font-size:11px; color:var(--color-text-warning); opacity:.8">Carrera, año, asignatura del estudiante al ver el ticket</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-tertiary); background:var(--color-background-secondary); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-secondary);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-primary)">Prioridad / urgencia en ticket</div>
+        <div style="font-size:11px; color:var(--color-text-secondary)">Normal / Urgente (ej. evaluación mañana)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Disponibilidad -->
+<div style="margin-bottom:10px">
+  <div style="font-size:11px; font-weight:500; color:var(--color-text-secondary); letter-spacing:.5px; margin-bottom:6px; display:flex; align-items:center; gap:6px">
+    <i class="ti ti-calendar" aria-hidden="true" style="font-size:13px"></i> DISPONIBILIDAD Y HORARIOS
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px">
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-danger); background:var(--color-background-danger); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-danger);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-danger)">Horarios recurrentes (office hours)</div>
+        <div style="font-size:11px; color:var(--color-text-danger); opacity:.8">Lunes 10-12h siempre. Sin esto el docente tiene que activar disponibilidad manualmente cada vez</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-warning); background:var(--color-background-warning); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-warning);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-warning)">Filtro "Solo disponibles ahora"</div>
+        <div style="font-size:11px; color:var(--color-text-warning); opacity:.8">El buscador principal no tiene forma de filtrar por disponibilidad actual</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-warning); background:var(--color-background-warning); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-warning);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-warning)">Exportar reunión a calendario</div>
+        <div style="font-size:11px; color:var(--color-text-warning); opacity:.8">Al coordinar reunión: link .ics / Google Calendar. Estándar en Calendly, etc.</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-tertiary); background:var(--color-background-secondary); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-secondary);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-primary)">Disponibilidad por fecha específica</div>
+        <div style="font-size:11px; color:var(--color-text-secondary)">Marcar "No disponible el viernes 24" sin apagar todo</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UX y admin -->
+<div style="margin-bottom:10px">
+  <div style="font-size:11px; font-weight:500; color:var(--color-text-secondary); letter-spacing:.5px; margin-bottom:6px; display:flex; align-items:center; gap:6px">
+    <i class="ti ti-settings" aria-hidden="true" style="font-size:13px"></i> UX Y ADMINISTRACIÓN
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px">
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-warning); background:var(--color-background-warning); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-warning);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-warning)">Panel de administración</div>
+        <div style="font-size:11px; color:var(--color-text-warning); opacity:.8">Quién gestiona los usuarios, aprueba docentes, ve reportes globales</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-warning); background:var(--color-background-warning); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-warning);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-warning)">Estados vacíos (empty states)</div>
+        <div style="font-size:11px; color:var(--color-text-warning); opacity:.8">"No tienes tickets aún" — sin esto la UI se ve rota</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-warning); background:var(--color-background-warning); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-warning);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-warning)">Estados de error en formularios</div>
+        <div style="font-size:11px; color:var(--color-text-warning); opacity:.8">Email inválido, contraseña corta, campo vacío — inline, no alert()</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-tertiary); background:var(--color-background-secondary); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-secondary);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-primary)">Rating post-consulta</div>
+        <div style="font-size:11px; color:var(--color-text-secondary)">El estudiante califica la atención del docente</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-tertiary); background:var(--color-background-secondary); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-secondary);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-primary)">Búsqueda dentro de tickets</div>
+        <div style="font-size:11px; color:var(--color-text-secondary)">El docente busca entre sus tickets por estudiante o asignatura</div>
+      </div>
+    </div>
+    <div style="padding:8px 10px; border-radius:var(--border-radius-md); border:0.5px solid var(--color-border-tertiary); background:var(--color-background-secondary); display:flex; align-items:flex-start; gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-text-secondary);margin-top:4px;flex-shrink:0"></span>
+      <div>
+        <div style="font-size:12px; font-weight:500; color:var(--color-text-primary)">Dashboard métricas docente</div>
+        <div style="font-size:11px; color:var(--color-text-secondary)">Tickets recibidos, tiempo promedio respuesta, temas frecuentes</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Resumen -->
+<div style="background:var(--color-background-secondary); border-radius:var(--border-radius-lg); border:0.5px solid var(--color-border-tertiary); padding:12px 14px">
+  <div style="font-size:11px; font-weight:500; color:var(--color-text-secondary); letter-spacing:.5px; margin-bottom:8px">RESUMEN — QUÉ AGREGAR SEGÚN PRIORIDAD</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center">
+    <div>
+      <div style="font-size:20px; font-weight:500; color:var(--color-text-danger)">4</div>
+      <div style="font-size:11px; color:var(--color-text-secondary)">críticas — sin estas<br>el sistema falla</div>
+    </div>
+    <div>
+      <div style="font-size:20px; font-weight:500; color:var(--color-text-warning)">9</div>
+      <div style="font-size:11px; color:var(--color-text-secondary)">importantes — estándar<br>en sistemas similares</div>
+    </div>
+    <div>
+      <div style="font-size:20px; font-weight:500; color:var(--color-text-secondary)">6</div>
+      <div style="font-size:11px; color:var(--color-text-secondary)">nice to have —<br>para versión futura</div>
+    </div>
+  </div>
+</div>
+
+</div>
