@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
@@ -27,7 +27,7 @@ jobs:
 
       - name: Install Playwright Browsers
         working-directory: proyecto
-        run: npx playwright install --with-deps chromium
+        run: npx --yes playwright install --with-deps chromium || npx --yes playwright install chromium
 
       - name: Prepare Environment
         working-directory: proyecto
