@@ -15,11 +15,18 @@ const estudiantesRoutes = require('./routes/estudiantes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// SEC-04: Session secret validation
+// Reverse proxy support (Render, Railway, Nginx) for HTTPS secure cookies
+app.set('trust proxy', 1);
+
+// SEC-04: Session secret and base URL validation for production
 const sessionSecret = process.env.SESSION_SECRET || 'fallback_secret';
 if (process.env.NODE_ENV === 'production') {
   if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'fallback_secret' || process.env.SESSION_SECRET === 'super_secret_key_change_me') {
     console.error('FATAL: Debes configurar un SESSION_SECRET seguro y único en producción.');
+    process.exit(1);
+  }
+  if (!process.env.APP_BASE_URL) {
+    console.error('FATAL: Debes configurar APP_BASE_URL con la URL canónica en producción.');
     process.exit(1);
   }
 }

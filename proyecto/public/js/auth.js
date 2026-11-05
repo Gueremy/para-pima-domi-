@@ -51,10 +51,14 @@ if (document.getElementById('login-form')) {
     try {
       const demoRes = await fetch('/api/auth/demo-status');
       if (demoRes.ok) {
-        const { demoMode } = await demoRes.json();
+        const { demoMode, allowDemoAdmin } = await demoRes.json();
         const banner = document.getElementById('demo-banner');
         if (demoMode && banner) {
           banner.style.display = 'block';
+          const adminBtn = document.querySelector('.btn-demo[data-role="admin"]');
+          if (adminBtn && allowDemoAdmin === false) {
+            adminBtn.style.display = 'none';
+          }
           document.querySelectorAll('.btn-demo').forEach(btn => {
             btn.addEventListener('click', async () => {
               const rol = btn.dataset.role;

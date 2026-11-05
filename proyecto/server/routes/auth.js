@@ -117,6 +117,14 @@ router.post('/demo-login', (req, res) => {
   if (!['estudiante', 'docente', 'admin'].includes(rol)) {
     return res.status(400).json({ error: 'Rol de prueba inválido' });
   }
+
+  // Security safeguard: In production, disallow unauthenticated admin demo login unless explicitly enabled
+  if (rol === 'admin' && process.env.NODE_ENV === 'production' && process.env.ALLOW_DEMO_ADMIN !== 'true') {
+    return res.status(403).json({
+      error: 'El acceso rápido a Administrador sin contraseña está restringido en producción. Inicie sesión con credenciales administrativas.',
+    });
+  }
+
   const user = db.prepare('SELECT id, email, nombre, rol FROM users WHERE rol = ? ORDER BY id ASC LIMIT 1').get(rol);
   if (!user) {
     return res.status(404).json({ error: `No se encontró usuario de prueba para rol ${rol}` });
@@ -130,7 +138,9 @@ router.post('/demo-login', (req, res) => {
 });
 
 router.get('/demo-status', (req, res) => {
-  res.json({ demoMode: process.env.DEMO_MODE === 'true' });
+  const isDemo = process.env.DEMO_MODE === 'true';
+  const allowAdmin = process.env.ALLOW_DEMO_ADMIN === 'true' || process.env.NODE_ENV !== 'production';
+  res.json({ demoMode: isDemo, allowDemoAdmin: isDemo && allowAdmin });
 });
 
 router.post('/logout', (req, res) => {

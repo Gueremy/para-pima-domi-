@@ -1,16 +1,21 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { db } = require('../db');
+const { requireRole } = require('../middleware/auth');
+const SQLiteSessionStore = require('../session-store');
 
 const router = express.Router();
 const DOMAIN = process.env.DOMAIN || '@universidad.cl';
+const requireAdmin = requireRole('admin');
 
-function requireAdmin(req, res, next) {
-  if (!req.session || !req.session.user || req.session.user.rol !== 'admin') {
-    return res.status(403).json({ error: 'Acceso denegado: se requieren permisos de administrador' });
-  }
-  next();
-}
+const CORE_DEMO_EMAILS = [
+  'admin@universidad.cl',
+  'docente@universidad.cl',
+  'estudiante@universidad.cl',
+  'ana.garcia@universidad.cl',
+  'carlos.lopez@universidad.cl',
+  'maria.torres@universidad.cl',
+];
 
 // GET /api/admin/usuarios — list all users
 router.get('/usuarios', requireAdmin, (req, res) => {
@@ -27,8 +32,12 @@ router.delete('/usuarios/:id', requireAdmin, (req, res) => {
     return res.status(400).json({ error: 'No puedes eliminar tu propia cuenta de administrador activa' });
   }
 
-  const targetUser = db.prepare('SELECT id, rol FROM users WHERE id = ?').get(id);
+  const targetUser = db.prepare('SELECT id, email, rol FROM users WHERE id = ?').get(id);
   if (!targetUser) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+  if (process.env.DEMO_MODE === 'true' && CORE_DEMO_EMAILS.includes(targetUser.email)) {
+    return res.status(403).json({ error: 'En modo demo, las cuentas base del sistema están protegidas contra eliminación.' });
+  }
 
   if (targetUser.rol === 'admin') {
     const adminCount = db.prepare("SELECT COUNT(*) as n FROM users WHERE rol = 'admin'").get().n;
@@ -44,6 +53,7 @@ router.delete('/usuarios/:id', requireAdmin, (req, res) => {
     db.prepare('DELETE FROM docentes WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM estudiantes WHERE user_id = ?').run(userId);
     db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(userId);
+    SQLiteSessionStore.revokeUserSessions(userId);
     db.prepare('DELETE FROM users WHERE id = ?').run(userId);
   });
 
@@ -76,8 +86,12 @@ router.patch('/usuarios/:id/rol', requireAdmin, (req, res) => {
     return res.status(400).json({ error: 'Rol inválido' });
   }
 
-  const user = db.prepare('SELECT id, rol FROM users WHERE id = ?').get(id);
+  const user = db.prepare('SELECT id, email, rol FROM users WHERE id = ?').get(id);
   if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+  if (process.env.DEMO_MODE === 'true' && CORE_DEMO_EMAILS.includes(user.email)) {
+    return res.status(403).json({ error: 'En modo demo, las cuentas base del sistema están protegidas contra cambio de rol.' });
+  }
 
   // Prevent demoting the last admin
   if (user.rol === 'admin' && rol !== 'admin') {
@@ -101,6 +115,7 @@ router.patch('/usuarios/:id/rol', requireAdmin, (req, res) => {
         db.prepare('INSERT INTO estudiantes (user_id) VALUES (?)').run(userId);
       }
     }
+    SQLiteSessionStore.revokeUserSessions(userId);
   });
 
   try {

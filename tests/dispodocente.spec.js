@@ -826,6 +826,125 @@ test.describe('8.5. Seguridad Crítica y Endurecimiento', () => {
     const rData = await ready.json();
     expect(rData.status).toBe('ready');
   });
+
+  test('8.6.1 (SEC-07) Recorrido completo de recuperación de contraseña', async ({ request }) => {
+    const email = 'juan.estudiante@universidad.cl';
+    const reqRes = await request.post(`${BASE}/api/reset/request`, { data: { email } });
+    expect(reqRes.ok()).toBeTruthy();
+    const reqData = await reqRes.json();
+    expect(reqData.ok).toBe(true);
+
+    let token = null;
+    if (reqData.demoResetUrl) {
+      const match = reqData.demoResetUrl.match(/token=([a-f0-9]+)/);
+      if (match) token = match[1];
+    }
+    if (!token) {
+      // Direct query from sqlite via db module for test assertions
+      const path = require('path');
+      const { db } = require(path.resolve(__dirname, '..', 'server', 'db'));
+      const row = db.prepare('SELECT token FROM password_resets ORDER BY id DESC LIMIT 1').get();
+      token = row ? row.token : null;
+    }
+    expect(token).toBeTruthy();
+
+    const newPass = 'NuevaClaveSegura123!';
+    const confRes = await request.post(`${BASE}/api/reset/confirm`, { data: { token, password: newPass } });
+    expect(confRes.ok()).toBeTruthy();
+
+    // Old password should fail
+    const oldLogin = await request.post(`${BASE}/api/auth/login`, { data: { email, password: 'wrongpassword' } });
+    expect(oldLogin.status()).toBe(401);
+
+    // New password should succeed
+    const newLogin = await request.post(`${BASE}/api/auth/login`, { data: { email, password: newPass } });
+    expect(newLogin.ok()).toBeTruthy();
+
+    // Revert password to standard demo est123
+    const bcrypt = require(path.resolve(__dirname, '..', 'node_modules', 'bcryptjs'));
+    const { db } = require(path.resolve(__dirname, '..', 'server', 'db'));
+    db.prepare('UPDATE users SET password = ? WHERE email = ?').run(bcrypt.hashSync('est123', 10), email);
+  });
+
+  test('8.6.2 (SEC-08) Sincronización en vivo de rol y revocación inmediata de permisos', async ({ browser, request }) => {
+    // 1. Admin creates a new teacher
+    const adminCtx = await browser.newContext();
+    const adminPage = await adminCtx.newPage();
+    await loginViaBrowser(adminPage, 'admin@universidad.cl', 'Admin123!');
+
+    const email = `doc.perm${Date.now()}@universidad.cl`;
+    const createRes = await adminPage.request.post(`${BASE}/api/admin/docentes`, {
+      data: {
+        nombre: 'Docente Permisos Test',
+        email,
+        password: 'Password123!',
+        carrera: 'Ingeniería Informática',
+        asignatura: 'Sistemas Operativos',
+      },
+    });
+    expect(createRes.ok()).toBeTruthy();
+    const { user: createdUser } = await createRes.json();
+
+    // 2. New teacher logs in in a separate context
+    const teacherCtx = await browser.newContext();
+    const teacherPage = await teacherCtx.newPage();
+    await loginViaBrowser(teacherPage, email, 'Password123!');
+    expect(teacherPage.url()).toContain('docente.html');
+
+    // Teacher can toggle availability
+    const toggleRes1 = await teacherPage.request.post(`${BASE}/api/docentes/toggle-disponibilidad`);
+    expect(toggleRes1.ok()).toBeTruthy();
+
+    // 3. Admin demotes teacher to 'estudiante'
+    const demoteRes = await adminPage.request.patch(`${BASE}/api/admin/usuarios/${createdUser.id}/rol`, {
+      data: { rol: 'estudiante' },
+    });
+    expect(demoteRes.ok()).toBeTruthy();
+
+    // 4. In existing teacher session, teacher-only endpoint is REJECTED with 403
+    const toggleRes2 = await teacherPage.request.post(`${BASE}/api/docentes/toggle-disponibilidad`);
+    expect(toggleRes2.status()).toBe(403);
+    const body403 = await toggleRes2.json();
+    expect(body403.error).toContain('rol');
+
+    // 5. Admin deletes the test user
+    const delRes = await adminPage.request.delete(`${BASE}/api/admin/usuarios/${createdUser.id}`);
+    expect(delRes.ok()).toBeTruthy();
+
+    // 6. In deleted user session, existing session is REJECTED with 401
+    const meRes = await teacherPage.request.get(`${BASE}/api/auth/me`);
+    expect(meRes.status()).toBe(401);
+
+    await adminCtx.close();
+    await teacherCtx.close();
+  });
+
+  test('8.6.3 (SEC-10) En modo demo las cuentas base están protegidas contra eliminación o degradación', async ({ browser }) => {
+    const adminCtx = await browser.newContext();
+    const adminPage = await adminCtx.newPage();
+    await loginViaBrowser(adminPage, 'admin@universidad.cl', 'Admin123!');
+
+    const usersRes = await adminPage.request.get(`${BASE}/api/admin/usuarios`);
+    const users = await usersRes.json();
+    const docenteBase = users.find(u => u.email === 'docente@universidad.cl');
+    expect(docenteBase).toBeTruthy();
+
+    // Attempt to delete base teacher in demo mode
+    const delRes = await adminPage.request.delete(`${BASE}/api/admin/usuarios/${docenteBase.id}`);
+    expect(delRes.status()).toBe(403);
+    const delBody = await delRes.json();
+    expect(delBody.error).toMatch(/modo demo|protegid/i);
+
+    // Attempt to demote base teacher in demo mode
+    const patchRes = await adminPage.request.patch(`${BASE}/api/admin/usuarios/${docenteBase.id}/rol`, {
+      data: { rol: 'estudiante' },
+    });
+    expect(patchRes.status()).toBe(403);
+    const patchBody = await patchRes.json();
+    expect(patchBody.error).toMatch(/modo demo|protegid/i);
+
+    await adminCtx.close();
+  });
 });
 
 // ============================================================

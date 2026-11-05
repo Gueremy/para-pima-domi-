@@ -30,17 +30,26 @@ class SQLiteSessionStore extends session.Store {
       const maxAge = sess.cookie && sess.cookie.maxAge ? sess.cookie.maxAge : 24 * 60 * 60 * 1000;
       const expiredAt = Date.now() + maxAge;
       const sessJson = JSON.stringify(sess);
+      const userId = sess.user && sess.user.id ? sess.user.id : null;
 
       const existing = db.prepare('SELECT sid FROM sessions WHERE sid = ?').get(sid);
       if (existing) {
-        db.prepare('UPDATE sessions SET sess = ?, expired_at = ? WHERE sid = ?').run(sessJson, expiredAt, sid);
+        db.prepare('UPDATE sessions SET sess = ?, user_id = ?, expired_at = ? WHERE sid = ?').run(sessJson, userId, expiredAt, sid);
       } else {
-        db.prepare('INSERT INTO sessions (sid, sess, expired_at) VALUES (?, ?, ?)').run(sid, sessJson, expiredAt);
+        db.prepare('INSERT INTO sessions (sid, user_id, sess, expired_at) VALUES (?, ?, ?, ?)').run(sid, userId, sessJson, expiredAt);
       }
       if (callback) callback(null);
     } catch (err) {
       if (callback) callback(err);
     }
+  }
+
+  static revokeUserSessions(userId) {
+    try {
+      if (userId) {
+        db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+      }
+    } catch (_) {}
   }
 
   destroy(sid, callback) {

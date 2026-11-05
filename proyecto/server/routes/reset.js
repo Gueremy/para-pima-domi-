@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { db } = require('../db');
 const { sendPasswordReset } = require('../mailer');
+const SQLiteSessionStore = require('../session-store');
 require('dotenv').config();
 
 const router = express.Router();
@@ -57,12 +58,21 @@ router.post('/request', async (req, res) => {
   db.prepare('DELETE FROM password_resets WHERE user_id = ?').run(user.id);
   db.prepare('INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)').run(user.id, tokenHash, expires);
 
-  // AUTH-01: Use trusted APP_BASE_URL to prevent Host Header injection
-  const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+  // AUTH-01: Canonical base URL enforcement (no Host Header injection)
+  const defaultLocalUrl = `http://localhost:${process.env.PORT || 3000}`;
+  const baseUrl = process.env.APP_BASE_URL || (process.env.NODE_ENV === 'production' ? null : defaultLocalUrl);
+  if (!baseUrl) {
+    return res.status(500).json({ error: 'Configuración de servidor incompleta: APP_BASE_URL es requerida en producción' });
+  }
   const resetUrl = `${baseUrl.replace(/\/$/, '')}/reset.html?token=${rawToken}`;
 
   sendPasswordReset(cleanEmail, user.nombre, resetUrl).catch(console.warn);
-  res.json({ ok: true });
+
+  // In demo mode, surface the link so reviewers can test the full recovery flow without server logs
+  return res.json({
+    ok: true,
+    demoResetUrl: process.env.DEMO_MODE === 'true' ? resetUrl : undefined,
+  });
 });
 
 // POST /api/reset/confirm — body: { token, password }
@@ -84,10 +94,8 @@ router.post('/confirm', async (req, res) => {
   const resetTx = db.transaction((userId, resetId, newHash) => {
     db.prepare('UPDATE users SET password = ? WHERE id = ?').run(newHash, userId);
     db.prepare('UPDATE password_resets SET used = 1 WHERE id = ?').run(resetId);
-    // Invalidate any active sessions for this user across devices
-    try {
-      db.prepare("DELETE FROM sessions WHERE sess LIKE ?").run(`%"id":${userId}%`);
-    } catch (_) {}
+    // Explicit and reliable relational session revocation across all devices
+    SQLiteSessionStore.revokeUserSessions(userId);
   });
 
   try {

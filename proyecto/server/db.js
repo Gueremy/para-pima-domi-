@@ -154,6 +154,7 @@ async function initDb() {
 
     CREATE TABLE IF NOT EXISTS sessions (
       sid        TEXT PRIMARY KEY,
+      user_id    INTEGER,
       sess       TEXT NOT NULL,
       expired_at INTEGER NOT NULL
     );
@@ -172,6 +173,11 @@ async function initDb() {
   const ticketCols = db.exec("PRAGMA table_info(tickets)")[0]?.values?.map(r => r[1]) || [];
   if (!ticketCols.includes('fecha_reunion')) {
     db.exec("ALTER TABLE tickets ADD COLUMN fecha_reunion DATETIME");
+  }
+
+  const sessionCols = db.exec("PRAGMA table_info(sessions)")[0]?.values?.map(r => r[1]) || [];
+  if (!sessionCols.includes('user_id')) {
+    db.exec("ALTER TABLE sessions ADD COLUMN user_id INTEGER");
   }
   saveDb();
 
@@ -289,7 +295,11 @@ async function seedData() {
   const uEst = ensureUser('estudiante@universidad.cl', 'Estudiante123!', 'Estudiante Base', 'estudiante');
   ensureEstudiante(uEst, 'Ingeniería en Informática', '4to');
 
-  ensureUser('admin@universidad.cl', 'Admin123!', 'Administrador Base', 'admin');
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@universidad.cl';
+  const adminPass = process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === 'production' ? null : 'Admin123!');
+  if (adminPass) {
+    ensureUser(adminEmail, adminPass, 'Administrador Base', 'admin');
+  }
   saveDb();
 }
 

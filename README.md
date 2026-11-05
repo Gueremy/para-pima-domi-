@@ -25,7 +25,7 @@ Plataforma full stack diseñada para optimizar la comunicación entre estudiante
 [ Base de Datos SQLite ]
    ├── Almacén de Sesiones en tabla `sessions` persistente entre reinicios
    ├── Transacciones ACID atómicas para operaciones críticas
-   └── Modo WAL y escrituras atómicas
+   └── Persistencia atómica (.tmp + renameSync) con sql.js WebAssembly
 ```
 
 ### Stack Técnico
