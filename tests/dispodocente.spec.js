@@ -1,4 +1,6 @@
 // @ts-check
+const path = require('path');
+const bcrypt = require('bcryptjs');
 const { test, expect, request } = require('@playwright/test');
 
 const BASE = 'http://localhost:3000';
@@ -840,8 +842,6 @@ test.describe('8.5. Seguridad Crítica y Endurecimiento', () => {
       if (match) token = match[1];
     }
     if (!token) {
-      // Direct query from sqlite via db module for test assertions
-      const path = require('path');
       const { db } = require(path.resolve(__dirname, '..', 'server', 'db'));
       const row = db.prepare('SELECT token FROM password_resets ORDER BY id DESC LIMIT 1').get();
       token = row ? row.token : null;
@@ -861,19 +861,20 @@ test.describe('8.5. Seguridad Crítica y Endurecimiento', () => {
     expect(newLogin.ok()).toBeTruthy();
 
     // Revert password to standard demo est123
-    const bcrypt = require(path.resolve(__dirname, '..', 'node_modules', 'bcryptjs'));
     const { db } = require(path.resolve(__dirname, '..', 'server', 'db'));
     db.prepare('UPDATE users SET password = ? WHERE email = ?').run(bcrypt.hashSync('est123', 10), email);
   });
 
-  test('8.6.2 (SEC-08) Sincronización en vivo de rol y revocación inmediata de permisos', async ({ browser, request }) => {
-    // 1. Admin creates a new teacher
-    const adminCtx = await browser.newContext();
-    const adminPage = await adminCtx.newPage();
-    await loginViaBrowser(adminPage, 'admin@universidad.cl', 'Admin123!');
+  test('8.6.2 (SEC-08) Sincronización en vivo de rol y revocación inmediata de permisos', async ({ playwright }) => {
+    // 1. Admin logs in via API request context
+    const adminReq = await playwright.request.newContext();
+    const adminLogin = await adminReq.post(`${BASE}/api/auth/login`, {
+      data: { email: 'admin@universidad.cl', password: 'Admin123!' },
+    });
+    expect(adminLogin.ok()).toBeTruthy();
 
     const email = `doc.perm${Date.now()}@universidad.cl`;
-    const createRes = await adminPage.request.post(`${BASE}/api/admin/docentes`, {
+    const createRes = await adminReq.post(`${BASE}/api/admin/docentes`, {
       data: {
         nombre: 'Docente Permisos Test',
         email,
@@ -885,65 +886,67 @@ test.describe('8.5. Seguridad Crítica y Endurecimiento', () => {
     expect(createRes.ok()).toBeTruthy();
     const { user: createdUser } = await createRes.json();
 
-    // 2. New teacher logs in in a separate context
-    const teacherCtx = await browser.newContext();
-    const teacherPage = await teacherCtx.newPage();
-    await loginViaBrowser(teacherPage, email, 'Password123!');
-    expect(teacherPage.url()).toContain('docente.html');
+    // 2. New teacher logs in in a separate request context
+    const teacherReq = await playwright.request.newContext();
+    const teacherLogin = await teacherReq.post(`${BASE}/api/auth/login`, {
+      data: { email, password: 'Password123!' },
+    });
+    expect(teacherLogin.ok()).toBeTruthy();
 
     // Teacher can toggle availability
-    const toggleRes1 = await teacherPage.request.post(`${BASE}/api/docentes/toggle-disponibilidad`);
+    const toggleRes1 = await teacherReq.patch(`${BASE}/api/docentes/disponibilidad`, {
+      data: { disponible: true },
+    });
     expect(toggleRes1.ok()).toBeTruthy();
 
     // 3. Admin demotes teacher to 'estudiante'
-    const demoteRes = await adminPage.request.patch(`${BASE}/api/admin/usuarios/${createdUser.id}/rol`, {
+    const demoteRes = await adminReq.patch(`${BASE}/api/admin/usuarios/${createdUser.id}/rol`, {
       data: { rol: 'estudiante' },
     });
     expect(demoteRes.ok()).toBeTruthy();
 
     // 4. In existing teacher session, teacher-only endpoint is REJECTED with 403
-    const toggleRes2 = await teacherPage.request.post(`${BASE}/api/docentes/toggle-disponibilidad`);
+    const toggleRes2 = await teacherReq.patch(`${BASE}/api/docentes/disponibilidad`, {
+      data: { disponible: true },
+    });
     expect(toggleRes2.status()).toBe(403);
     const body403 = await toggleRes2.json();
     expect(body403.error).toContain('rol');
 
     // 5. Admin deletes the test user
-    const delRes = await adminPage.request.delete(`${BASE}/api/admin/usuarios/${createdUser.id}`);
+    const delRes = await adminReq.delete(`${BASE}/api/admin/usuarios/${createdUser.id}`);
     expect(delRes.ok()).toBeTruthy();
 
     // 6. In deleted user session, existing session is REJECTED with 401
-    const meRes = await teacherPage.request.get(`${BASE}/api/auth/me`);
+    const meRes = await teacherReq.get(`${BASE}/api/auth/me`);
     expect(meRes.status()).toBe(401);
-
-    await adminCtx.close();
-    await teacherCtx.close();
   });
 
-  test('8.6.3 (SEC-10) En modo demo las cuentas base están protegidas contra eliminación o degradación', async ({ browser }) => {
-    const adminCtx = await browser.newContext();
-    const adminPage = await adminCtx.newPage();
-    await loginViaBrowser(adminPage, 'admin@universidad.cl', 'Admin123!');
+  test('8.6.3 (SEC-10) En modo demo las cuentas base están protegidas contra eliminación o degradación', async ({ playwright }) => {
+    const adminReq = await playwright.request.newContext();
+    const adminLogin = await adminReq.post(`${BASE}/api/auth/login`, {
+      data: { email: 'admin@universidad.cl', password: 'Admin123!' },
+    });
+    expect(adminLogin.ok()).toBeTruthy();
 
-    const usersRes = await adminPage.request.get(`${BASE}/api/admin/usuarios`);
+    const usersRes = await adminReq.get(`${BASE}/api/admin/usuarios`);
     const users = await usersRes.json();
     const docenteBase = users.find(u => u.email === 'docente@universidad.cl');
     expect(docenteBase).toBeTruthy();
 
     // Attempt to delete base teacher in demo mode
-    const delRes = await adminPage.request.delete(`${BASE}/api/admin/usuarios/${docenteBase.id}`);
+    const delRes = await adminReq.delete(`${BASE}/api/admin/usuarios/${docenteBase.id}`);
     expect(delRes.status()).toBe(403);
     const delBody = await delRes.json();
     expect(delBody.error).toMatch(/modo demo|protegid/i);
 
     // Attempt to demote base teacher in demo mode
-    const patchRes = await adminPage.request.patch(`${BASE}/api/admin/usuarios/${docenteBase.id}/rol`, {
+    const patchRes = await adminReq.patch(`${BASE}/api/admin/usuarios/${docenteBase.id}/rol`, {
       data: { rol: 'estudiante' },
     });
     expect(patchRes.status()).toBe(403);
     const patchBody = await patchRes.json();
     expect(patchBody.error).toMatch(/modo demo|protegid/i);
-
-    await adminCtx.close();
   });
 });
 
