@@ -27,13 +27,12 @@ jobs:
 
       - name: Install Playwright Browsers
         working-directory: proyecto
-        run: npx --yes playwright install --with-deps chromium || npx --yes playwright install chromium
+        run: npx --yes playwright install --with-deps chromium
 
       - name: Prepare Environment
         working-directory: proyecto
         run: |
           cp .env.example .env
-          npm run seed:admin
           npm run seed:demo
 
       - name: Run Playwright Tests

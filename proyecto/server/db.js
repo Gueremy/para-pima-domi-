@@ -179,46 +179,117 @@ async function initDb() {
 }
 
 async function seedData() {
-  const result = db.exec('SELECT COUNT(*) as cnt FROM users');
-  const cnt = result[0]?.values[0][0] || 0;
-  if (cnt > 0) return;
-
   const hash = (pwd) => bcrypt.hashSync(pwd, 10);
 
-  const insUser = prepare('INSERT INTO users (email, password, nombre, rol) VALUES (?, ?, ?, ?)');
-  const insDocente = prepare(
-    'INSERT INTO docentes (user_id, carrera, asignatura, es_part_time, disponible, descripcion_pt, bio, ramos, certificados, telefono, oficina) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  );
+  function ensureUser(email, password, nombre, rol) {
+    const existing = db.exec("SELECT id FROM users WHERE email = '" + email.replace(/'/g, "''") + "'");
+    if (existing.length && existing[0].values.length) {
+      return existing[0].values[0][0];
+    }
+    db.run('INSERT INTO users (email, password, nombre, rol) VALUES (?, ?, ?, ?)', [
+      email,
+      hash(password),
+      nombre,
+      rol,
+    ]);
+    const idRow = db.exec('SELECT last_insert_rowid() as id')[0];
+    return idRow ? idRow.values[0][0] : null;
+  }
 
-  const d1 = insUser.run('ana.garcia@universidad.cl', hash('docente123'), 'Ana García', 'docente');
-  const d2 = insUser.run('carlos.lopez@universidad.cl', hash('docente123'), 'Carlos López', 'docente');
-  const d3 = insUser.run('maria.torres@universidad.cl', hash('docente123'), 'María Torres', 'docente');
+  function ensureDocente(userId, info) {
+    if (!userId) return;
+    const existing = db.exec('SELECT id FROM docentes WHERE user_id = ' + userId);
+    if (existing.length && existing[0].values.length) return;
+    db.run(
+      `INSERT INTO docentes (user_id, carrera, asignatura, es_part_time, disponible, descripcion_pt, bio, ramos, certificados, telefono, oficina)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        info.carrera || '',
+        info.asignatura || '',
+        info.es_part_time ? 1 : 0,
+        info.disponible ? 1 : 0,
+        info.descripcion_pt || null,
+        info.bio || '',
+        info.ramos || '',
+        info.certificados || '',
+        info.telefono || '',
+        info.oficina || '',
+      ]
+    );
+  }
 
-  insDocente.run(d1.lastInsertRowid, 'Ingeniería Informática', 'Programación Web', 0, 1, null,
-    'Docente con 10 años de experiencia en desarrollo web y arquitectura de software.',
-    'Programación Web, Desarrollo de Software, Bases de Datos',
-    'Magíster en Ingeniería Informática, Certificación AWS Solutions Architect',
-    '+56 9 1234 5678', 'Edificio A, Oficina 302');
-  insDocente.run(d2.lastInsertRowid, 'Ingeniería Civil', 'Cálculo Diferencial', 1, 0, 'Disponible lunes y miércoles por las tardes',
-    'Especialista en matemáticas aplicadas e ingeniería estructural.',
-    'Cálculo Diferencial, Álgebra Lineal, Ecuaciones Diferenciales',
-    'Doctor en Ciencias de la Ingeniería',
-    '+56 9 8765 4321', 'Edificio B, Oficina 115');
-  insDocente.run(d3.lastInsertRowid, 'Administración de Empresas', 'Contabilidad General', 0, 1, null,
-    'Contadora pública con experiencia en auditoría y finanzas corporativas.',
-    'Contabilidad General, Auditoría, Finanzas Empresariales',
-    'MBA Finanzas, Contador Público Certificado',
-    '+56 9 5555 1234', 'Edificio C, Oficina 210');
+  function ensureEstudiante(userId, carrera, anio) {
+    if (!userId) return;
+    const existing = db.exec('SELECT id FROM estudiantes WHERE user_id = ' + userId);
+    if (existing.length && existing[0].values.length) return;
+    db.run('INSERT INTO estudiantes (user_id, carrera, anio) VALUES (?, ?, ?)', [userId, carrera, anio]);
+  }
 
-  insUser.run('juan.estudiante@universidad.cl', hash('est123'), 'Juan Pérez', 'estudiante');
-  insUser.run('sofia.alumna@universidad.cl', hash('est123'), 'Sofía Ramírez', 'estudiante');
+  const d1 = ensureUser('ana.garcia@universidad.cl', 'docente123', 'Ana García', 'docente');
+  ensureDocente(d1, {
+    carrera: 'Ingeniería Informática',
+    asignatura: 'Programación Web',
+    es_part_time: 0,
+    disponible: 1,
+    bio: 'Docente con 10 años de experiencia en desarrollo web y arquitectura de software.',
+    ramos: 'Programación Web, Desarrollo de Software, Bases de Datos',
+    certificados: 'Magíster en Ingeniería Informática, Certificación AWS Solutions Architect',
+    telefono: '+56 9 1234 5678',
+    oficina: 'Edificio A, Oficina 302',
+  });
+
+  const d2 = ensureUser('carlos.lopez@universidad.cl', 'docente123', 'Carlos López', 'docente');
+  ensureDocente(d2, {
+    carrera: 'Ingeniería Civil',
+    asignatura: 'Cálculo Diferencial',
+    es_part_time: 1,
+    disponible: 0,
+    descripcion_pt: 'Disponible lunes y miércoles por las tardes',
+    bio: 'Especialista en matemáticas aplicadas e ingeniería estructural.',
+    ramos: 'Cálculo Diferencial, Álgebra Lineal, Ecuaciones Diferenciales',
+    certificados: 'Doctor en Ciencias de la Ingeniería',
+    telefono: '+56 9 8765 4321',
+    oficina: 'Edificio B, Oficina 115',
+  });
+
+  const d3 = ensureUser('maria.torres@universidad.cl', 'docente123', 'María Torres', 'docente');
+  ensureDocente(d3, {
+    carrera: 'Administración de Empresas',
+    asignatura: 'Contabilidad General',
+    es_part_time: 0,
+    disponible: 1,
+    bio: 'Contadora pública con experiencia en auditoría y finanzas corporativas.',
+    ramos: 'Contabilidad General, Auditoría, Finanzas Empresariales',
+    certificados: 'MBA Finanzas, Contador Público Certificado',
+    telefono: '+56 9 5555 1234',
+    oficina: 'Edificio C, Oficina 210',
+  });
+
+  const uJuan = ensureUser('juan.estudiante@universidad.cl', 'est123', 'Juan Pérez', 'estudiante');
+  ensureEstudiante(uJuan, 'Ingeniería Informática', '3er');
+
+  const uSofia = ensureUser('sofia.alumna@universidad.cl', 'est123', 'Sofía Ramírez', 'estudiante');
+  ensureEstudiante(uSofia, 'Ingeniería Civil', '2do');
 
   // Standard evaluation & QA accounts
-  const dDefault = insUser.run('docente@universidad.cl', hash('Docente123!'), 'Docente Base', 'docente');
-  insDocente.run(dDefault.lastInsertRowid, 'Ingeniería en Informática', 'Bases de Datos', 0, 1, null,
-    'Docente principal de pruebas y demostraciones.', 'Bases de Datos, Redes', 'Magíster', '+56 9 1111 2222', 'Oficina 101');
-  insUser.run('estudiante@universidad.cl', hash('Estudiante123!'), 'Estudiante Base', 'estudiante');
-  insUser.run('admin@universidad.cl', hash('Admin123!'), 'Administrador Base', 'admin');
+  const dDefault = ensureUser('docente@universidad.cl', 'Docente123!', 'Docente Base', 'docente');
+  ensureDocente(dDefault, {
+    carrera: 'Ingeniería en Informática',
+    asignatura: 'Bases de Datos',
+    es_part_time: 0,
+    disponible: 1,
+    bio: 'Docente principal de pruebas y demostraciones.',
+    ramos: 'Bases de Datos, Redes',
+    certificados: 'Magíster',
+    telefono: '+56 9 1111 2222',
+    oficina: 'Oficina 101',
+  });
+
+  const uEst = ensureUser('estudiante@universidad.cl', 'Estudiante123!', 'Estudiante Base', 'estudiante');
+  ensureEstudiante(uEst, 'Ingeniería en Informática', '4to');
+
+  ensureUser('admin@universidad.cl', 'Admin123!', 'Administrador Base', 'admin');
   saveDb();
 }
 

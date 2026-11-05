@@ -2,7 +2,7 @@
 const { defineConfig } = require('@playwright/test');
 
 module.exports = defineConfig({
-  testDir: '.',
+  testDir: './tests',
   timeout: 30000,
   retries: 0,
   workers: 1,
@@ -19,7 +19,7 @@ module.exports = defineConfig({
     command: 'node server/index.js',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
-    timeout: 15000,
+    timeout: 30000,
   },
   projects: [
     {
