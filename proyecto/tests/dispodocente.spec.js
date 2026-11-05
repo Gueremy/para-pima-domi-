@@ -63,18 +63,30 @@ test.describe('1. Autenticación', () => {
     expect(page.url()).toContain('estudiante.html');
   });
 
-  test('1.3 Registro docente redirige a /docente.html', async ({ page }) => {
-    const email = `doc${Date.now()}@universidad.cl`;
-    await page.goto(`${BASE}/login.html`);
-    await page.click('#show-register');
-    await page.fill('#reg-nombre', 'Playwright Docente');
-    await page.fill('#reg-email', email);
-    await page.fill('#reg-password', 'TestPass123!');
-    await page.selectOption('#reg-rol', 'docente');
-    await page.locator('#register-section button[type=submit]').click();
+  test('1.3 (SEC-02) Intento de registro como docente es rechazado', async ({ request }) => {
+    const res = await request.post(`${BASE}/api/auth/register`, {
+      data: {
+        nombre: 'Intruso Docente',
+        email: `doc${Date.now()}@universidad.cl`,
+        password: 'TestPass123!',
+        rol: 'docente',
+      },
+    });
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('estudiante');
+  });
 
-    await page.waitForURL(`${BASE}/docente.html`, { timeout: 8000 });
-    expect(page.url()).toContain('docente.html');
+  test('1.3.1 (SEC-01) Intento de autorregistro como admin es rechazado', async ({ request }) => {
+    const res = await request.post(`${BASE}/api/auth/register`, {
+      data: {
+        nombre: 'Intruso Admin',
+        email: 'admin@universidad.cl',
+        password: 'TestPass123!',
+        rol: 'admin',
+      },
+    });
+    expect(res.status()).toBe(400);
   });
 
   // NOTE: Rate limit test is intentionally placed in section 9 (last) to avoid
@@ -759,6 +771,60 @@ test.describe('8. Suscripciones / Notificarme', () => {
     await page.request.post(`${BASE}/api/docentes/suscribir/3`);
 
     await logoutViaBrowser(page);
+  });
+});
+
+// ============================================================
+// 8.5. PRUEBAS DE SEGURIDAD P0 Y OBSERVABILIDAD
+// ============================================================
+
+test.describe('8.5. Seguridad Crítica y Endurecimiento', () => {
+  test('8.5.1 (SEC-05) Descarga de .ics sin autenticación devuelve 401', async ({ request }) => {
+    const res = await request.get(`${BASE}/api/tickets/1/ics`);
+    expect(res.status()).toBe(401);
+  });
+
+  test('8.5.2 (SEC-03) XSS: Nombres con etiquetas HTML no ejecutan scripts', async ({ page }) => {
+    const xssPayload = 'Test <img src=x onerror=window.__xss=1>';
+    const email = `xss${Date.now()}@universidad.cl`;
+
+    const reg = await page.request.post(`${BASE}/api/auth/register`, {
+      data: { email, password: 'Password123!', nombre: xssPayload, rol: 'estudiante' },
+    });
+    expect(reg.ok()).toBeTruthy();
+
+    // Registration automatically logs in and sets session cookie in context
+    await page.goto(`${BASE}/estudiante.html`);
+    await page.waitForLoadState('networkidle');
+    const xssTriggered = await page.evaluate(() => window.__xss === 1);
+    expect(xssTriggered).toBe(false);
+
+    await logoutViaBrowser(page);
+  });
+
+  test('8.5.3 (DATA-02) Admin no puede autoeliminar su propia cuenta', async ({ page }) => {
+    await loginViaBrowser(page, 'admin@universidad.cl', 'Admin123!');
+    const meRes = await page.request.get(`${BASE}/api/auth/me`);
+    const { user } = await meRes.json();
+
+    const delRes = await page.request.delete(`${BASE}/api/admin/usuarios/${user.id}`);
+    expect(delRes.status()).toBe(400);
+    const body = await delRes.json();
+    expect(body.error).toContain('propia cuenta');
+
+    await logoutViaBrowser(page);
+  });
+
+  test('8.5.4 (OPS-01) Endpoints /health y /ready responden con 200', async ({ request }) => {
+    const health = await request.get(`${BASE}/health`);
+    expect(health.ok()).toBeTruthy();
+    const hData = await health.json();
+    expect(hData.status).toBe('ok');
+
+    const ready = await request.get(`${BASE}/ready`);
+    expect(ready.ok()).toBeTruthy();
+    const rData = await ready.json();
+    expect(rData.status).toBe('ready');
   });
 });
 

@@ -1,0 +1,49 @@
+name: DispoDocente CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: proyecto/package-lock.json
+
+      - name: Install dependencies
+        working-directory: proyecto
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: proyecto
+        run: npx playwright install --with-deps chromium
+
+      - name: Prepare Environment
+        working-directory: proyecto
+        run: |
+          cp .env.example .env
+          npm run seed:admin
+          npm run seed:demo
+
+      - name: Run Playwright Tests
+        working-directory: proyecto
+        run: npm test
+
+      - name: Upload Test Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: proyecto/test-results/
+          retention-days: 14

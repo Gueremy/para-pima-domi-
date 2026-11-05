@@ -47,7 +47,10 @@
 
     <!-- Users table -->
     <div class="card">
-      <h2 class="section-title">Usuarios del sistema</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h2 class="section-title" style="margin-bottom:0">Usuarios del sistema</h2>
+        <button id="btn-open-docente-modal" class="btn btn-primary btn-sm">+ Registrar Docente</button>
+      </div>
       <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
           <thead>
@@ -67,6 +70,43 @@
     </div>
   </div>
 
+  <!-- Modal Crear Docente -->
+  <div id="docente-modal" class="modal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Registrar Nuevo Docente</h3>
+        <button id="close-docente-modal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="docente-modal-alert"></div>
+        <form id="nuevo-docente-form">
+          <div class="form-group">
+            <label class="form-label">Nombre completo</label>
+            <input type="text" id="doc-nombre" class="form-control" placeholder="Ej: Patricia Morales" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Correo institucional (@universidad.cl)</label>
+            <input type="email" id="doc-email" class="form-control" placeholder="patricia.morales@universidad.cl" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Carrera</label>
+            <input type="text" id="doc-carrera" class="form-control" placeholder="Ej: Ingeniería en Informática" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Asignatura</label>
+            <input type="text" id="doc-asignatura" class="form-control" placeholder="Ej: Arquitectura de Software" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contraseña inicial</label>
+            <input type="password" id="doc-password" class="form-control" placeholder="Mínimo 6 caracteres" required minlength="6" />
+          </div>
+          <button type="submit" id="btn-save-docente" class="btn btn-primary" style="width:100%">Crear Docente</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/shared.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/admin.js"></script>
 </body>

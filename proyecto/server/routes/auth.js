@@ -33,6 +33,7 @@ function recordFailedLogin(ip) {
   loginAttempts.set(ip, entry);
 }
 
+// SEC-01 & SEC-02: Public registration strictly for students
 router.post('/register', async (req, res) => {
   const { email, password, nombre, rol } = req.body;
 
@@ -42,10 +43,10 @@ router.post('/register', async (req, res) => {
   if (!email.endsWith(DOMAIN)) {
     return res.status(400).json({ error: `El email debe contener ${DOMAIN}` });
   }
-  if (!['estudiante', 'docente'].includes(rol)) {
-    if (!(rol === 'admin' && email === process.env.ADMIN_EMAIL)) {
-      return res.status(400).json({ error: 'Rol inválido' });
-    }
+  if (rol !== 'estudiante') {
+    return res.status(400).json({
+      error: 'El registro público solo está disponible para estudiantes. Docentes y administradores son gestionados por la institución.',
+    });
   }
   if (password.length < 6) {
     return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
@@ -54,17 +55,19 @@ router.post('/register', async (req, res) => {
   try {
     const hashed = await bcrypt.hash(password, 10);
     const stmt = db.prepare('INSERT INTO users (email, password, nombre, rol) VALUES (?, ?, ?, ?)');
-    const result = stmt.run(email, hashed, nombre, rol);
+    const result = stmt.run(email, hashed, nombre.trim(), 'estudiante');
 
-    if (rol === 'docente') {
-      db.prepare('INSERT INTO docentes (user_id) VALUES (?)').run(result.lastInsertRowid);
-    }
+    // Create entry in estudiantes table
+    db.prepare('INSERT INTO estudiantes (user_id) VALUES (?)').run(result.lastInsertRowid);
 
     const user = db.prepare('SELECT id, email, nombre, rol FROM users WHERE id = ?').get(result.lastInsertRowid);
-    req.session.user = user;
-    return res.status(201).json({ user });
+    req.session.regenerate((err) => {
+      if (err) return res.status(500).json({ error: 'Error al iniciar sesión tras el registro' });
+      req.session.user = user;
+      return res.status(201).json({ user });
+    });
   } catch (err) {
-    if (err.message.includes('UNIQUE')) {
+    if (err.message && err.message.includes('UNIQUE')) {
       return res.status(409).json({ error: 'El email ya está registrado' });
     }
     console.error(err);
@@ -73,7 +76,7 @@ router.post('/register', async (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-  const ip = req.ip || req.connection.remoteAddress;
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
   if (isRateLimited(ip)) {
     return res.status(429).json({ error: 'Demasiados intentos. Espera 15 minutos.' });
   }
@@ -85,7 +88,7 @@ router.post('/login', async (req, res) => {
     return res.status(400).json({ error: 'Email y contraseña requeridos' });
   }
 
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email.trim().toLowerCase());
   if (!user) {
     recordFailedLogin(ip);
     return res.status(401).json({ error: 'Credenciales inválidas' });
@@ -98,8 +101,36 @@ router.post('/login', async (req, res) => {
   }
 
   const sessionUser = { id: user.id, email: user.email, nombre: user.nombre, rol: user.rol };
-  req.session.user = sessionUser;
-  return res.json({ user: sessionUser });
+  req.session.regenerate((err) => {
+    if (err) return res.status(500).json({ error: 'Error al establecer la sesión' });
+    req.session.user = sessionUser;
+    return res.json({ user: sessionUser });
+  });
+});
+
+// Quick demo login for recruiter walkthroughs
+router.post('/demo-login', (req, res) => {
+  if (process.env.DEMO_MODE !== 'true') {
+    return res.status(403).json({ error: 'Modo demo deshabilitado' });
+  }
+  const { rol } = req.body;
+  if (!['estudiante', 'docente', 'admin'].includes(rol)) {
+    return res.status(400).json({ error: 'Rol de prueba inválido' });
+  }
+  const user = db.prepare('SELECT id, email, nombre, rol FROM users WHERE rol = ? ORDER BY id ASC LIMIT 1').get(rol);
+  if (!user) {
+    return res.status(404).json({ error: `No se encontró usuario de prueba para rol ${rol}` });
+  }
+  const sessionUser = { id: user.id, email: user.email, nombre: user.nombre, rol: user.rol };
+  req.session.regenerate((err) => {
+    if (err) return res.status(500).json({ error: 'Error al iniciar sesión demo' });
+    req.session.user = sessionUser;
+    return res.json({ user: sessionUser });
+  });
+});
+
+router.get('/demo-status', (req, res) => {
+  res.json({ demoMode: process.env.DEMO_MODE === 'true' });
 });
 
 router.post('/logout', (req, res) => {

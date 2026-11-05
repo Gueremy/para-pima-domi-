@@ -14,6 +14,21 @@
   </nav>
 
   <div class="auth-container">
+    <!-- Demo quick access for recruiters -->
+    <div id="demo-banner" class="auth-card" style="display:none;margin-bottom:1rem;background:var(--bg-secondary);border:1px solid var(--border)">
+      <div style="font-size:0.9rem;font-weight:700;margin-bottom:0.4rem;color:var(--primary)">
+        🚀 Acceso Rápido Demo (Evaluadores & Portafolio)
+      </div>
+      <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem">
+        Prueba cualquier rol con 1 clic sin ingresar contraseñas:
+      </p>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        <button type="button" class="btn btn-outline btn-sm btn-demo" data-role="estudiante">👨‍🎓 Estudiante</button>
+        <button type="button" class="btn btn-outline btn-sm btn-demo" data-role="docente">👩‍🏫 Docente</button>
+        <button type="button" class="btn btn-outline btn-sm btn-demo" data-role="admin">🛡️ Admin</button>
+      </div>
+    </div>
+
     <!-- Login -->
     <div id="login-section" class="auth-card">
       <h2 class="auth-title">Iniciar Sesion</h2>
@@ -40,7 +55,7 @@
 
     <!-- Register -->
     <div id="register-section" class="auth-card" style="display:none">
-      <h2 class="auth-title">Crear Cuenta</h2>
+      <h2 class="auth-title">Crear Cuenta de Estudiante</h2>
       <div id="register-alert"></div>
       <form id="register-form">
         <div class="form-group">
@@ -53,16 +68,18 @@
         </div>
         <div class="form-group">
           <label class="form-label">Contrasena</label>
-          <input type="password" id="reg-password" class="form-control" placeholder="••••••" required />
+          <input type="password" id="reg-password" class="form-control" placeholder="••••••" required minlength="6" />
         </div>
         <div class="form-group">
-          <label class="form-label">Soy</label>
-          <select id="reg-rol" class="form-control">
-            <option value="estudiante">Estudiante</option>
-            <option value="docente">Docente</option>
+          <label class="form-label">Rol</label>
+          <select id="reg-rol" class="form-control" style="background:var(--bg-secondary);pointer-events:none">
+            <option value="estudiante" selected>Estudiante</option>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%">Registrarme</button>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">
+          <em>* El registro público es exclusivo para estudiantes. Si eres docente, tu cuenta debe ser autorizada por la administración.</em>
+        </p>
+        <button type="submit" class="btn btn-primary" style="width:100%">Registrarme como Estudiante</button>
       </form>
       <div class="auth-switch">
         Ya tienes cuenta? <a id="show-login">Iniciar sesion</a>

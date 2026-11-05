@@ -1,6 +1,6 @@
 const express = require('express');
 const { db } = require('../db');
-const { requireRole } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const { notifyDocenteNuevoTicket, sendTicketConfirmacionEstudiante, sendTicketRespuestaEstudiante } = require('../mailer');
 
 const router = express.Router();
@@ -14,6 +14,9 @@ router.post('/', requireRole('estudiante'), (req, res) => {
   }
   if (!['presencial', 'escrita'].includes(tipo)) {
     return res.status(400).json({ error: 'Tipo inválido' });
+  }
+  if (mensaje && mensaje.length > 2000) {
+    return res.status(400).json({ error: 'El mensaje no puede exceder los 2000 caracteres' });
   }
 
   const docenteUser = db.prepare('SELECT u.email, u.nombre FROM users u WHERE u.id = ? AND u.rol = ?')
@@ -30,7 +33,7 @@ router.post('/', requireRole('estudiante'), (req, res) => {
 
   const result = db.prepare(
     'INSERT INTO tickets (estudiante_id, docente_id, tipo, mensaje) VALUES (?, ?, ?, ?)'
-  ).run(estudianteId, docenteId, tipo, mensaje || '');
+  ).run(estudianteId, docenteId, tipo, (mensaje || '').trim());
 
   notifyDocenteNuevoTicket(docenteUser.email, req.session.user.nombre, tipo).catch(console.warn);
   sendTicketConfirmacionEstudiante(
@@ -38,7 +41,7 @@ router.post('/', requireRole('estudiante'), (req, res) => {
     req.session.user.nombre,
     docenteUser.nombre,
     tipo,
-    mensaje || ''
+    (mensaje || '').trim()
   ).catch(console.warn);
 
   const ticket = db.prepare('SELECT * FROM tickets WHERE id = ?').get(result.lastInsertRowid);
@@ -81,7 +84,7 @@ router.get('/recibidos', requireRole('docente'), (req, res) => {
 router.patch('/:id/responder', requireRole('docente'), (req, res) => {
   const ticketId = parseInt(req.params.id, 10);
   const docenteId = req.session.user.id;
-  const { tipoRespuesta, respuesta } = req.body;
+  const { tipoRespuesta, respuesta, fechaReunion } = req.body;
 
   if (isNaN(ticketId)) return res.status(400).json({ error: 'ID inválido' });
   if (!['resuelto', 'respuesta', 'reunion'].includes(tipoRespuesta)) {
@@ -92,12 +95,13 @@ router.patch('/:id/responder', requireRole('docente'), (req, res) => {
   if (!ticket) return res.status(404).json({ error: 'Ticket no encontrado' });
 
   const nuevoEstado = tipoRespuesta === 'resuelto' ? 'resuelto' : 'respondido';
+  const meetingDate = (tipoRespuesta === 'reunion' && fechaReunion) ? fechaReunion : null;
 
   db.prepare(`
     UPDATE tickets
-    SET estado = ?, respuesta = ?, tipo_respuesta = ?, updated_at = CURRENT_TIMESTAMP
+    SET estado = ?, respuesta = ?, tipo_respuesta = ?, fecha_reunion = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
-  `).run(nuevoEstado, respuesta || null, tipoRespuesta, ticketId);
+  `).run(nuevoEstado, respuesta ? respuesta.trim() : null, tipoRespuesta, meetingDate, ticketId);
 
   const estudianteRow = db.prepare(
     'SELECT u.email, u.nombre FROM users u JOIN tickets t ON t.estudiante_id = u.id WHERE t.id = ?'
@@ -108,7 +112,7 @@ router.patch('/:id/responder', requireRole('docente'), (req, res) => {
       estudianteRow.nombre,
       req.session.user.nombre,
       tipoRespuesta,
-      respuesta || null
+      respuesta ? respuesta.trim() : null
     ).catch(console.warn);
   }
 
@@ -116,30 +120,67 @@ router.patch('/:id/responder', requireRole('docente'), (req, res) => {
   return res.json(updated);
 });
 
-router.get('/:id/ics', (req, res) => {
+// SEC-05 & BUS-01: Protected and realistic ICS generation
+router.get('/:id/ics', requireAuth, (req, res) => {
+  const ticketId = parseInt(req.params.id, 10);
+  if (isNaN(ticketId)) return res.status(400).json({ error: 'ID inválido' });
+
   const ticket = db.prepare(`
-    SELECT t.*, u_est.nombre as estudiante_nombre, u_doc.nombre as docente_nombre, t.respuesta
+    SELECT t.*, u_est.nombre as estudiante_nombre, u_est.email as estudiante_email,
+           u_doc.nombre as docente_nombre, u_doc.email as docente_email, t.respuesta
     FROM tickets t
     JOIN users u_est ON t.estudiante_id = u_est.id
     JOIN users u_doc ON t.docente_id = u_doc.id
     WHERE t.id = ? AND t.tipo_respuesta = 'reunion'
-  `).get(parseInt(req.params.id, 10));
-  if (!ticket) return res.status(404).json({ error: 'No encontrado' });
-  const now = new Date();
-  const dtStamp = now.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  `).get(ticketId);
+
+  if (!ticket) return res.status(404).json({ error: 'Ticket de reunión no encontrado' });
+
+  // Ownership verification
+  const currentUserId = req.session.user.id;
+  if (currentUserId !== ticket.estudiante_id && currentUserId !== ticket.docente_id && req.session.user.rol !== 'admin') {
+    return res.status(403).json({ error: 'No autorizado para acceder a este calendario' });
+  }
+
+  let startDate = new Date();
+  if (ticket.fecha_reunion) {
+    const parsed = new Date(ticket.fecha_reunion);
+    if (!isNaN(parsed.getTime())) startDate = parsed;
+  } else {
+    // Tomorrow at 10:00 AM local if no date was recorded
+    startDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    startDate.setHours(10, 0, 0, 0);
+  }
+  const endDate = new Date(startDate.getTime() + 45 * 60 * 1000); // 45 minutes
+
+  const formatIcsDate = (d) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const dtStamp = formatIcsDate(new Date());
+  const dtStart = formatIcsDate(startDate);
+  const dtEnd = formatIcsDate(endDate);
+
+  const escapeIcs = (str) => (str || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+
   const ics = [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//DisponibilidadDocente//ES',
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//DispoDocente//ES',
+    'CALSCALE:GREGORIAN',
+    'METHOD:REQUEST',
     'BEGIN:VEVENT',
-    `DTSTART:${dtStamp}`,
-    `DTEND:${dtStamp}`,
-    `SUMMARY:Reunion con ${ticket.docente_nombre}`,
-    `DESCRIPTION:${(ticket.respuesta || '').replace(/\n/g, '\\n')}`,
-    `ORGANIZER:CN=${ticket.docente_nombre}`,
-    `ATTENDEE:CN=${ticket.estudiante_nombre}`,
-    `UID:ticket-${ticket.id}@disponibilidad-docente`,
-    'END:VEVENT', 'END:VCALENDAR',
+    `UID:ticket-${ticket.id}@dispodocente.universidad.cl`,
+    `DTSTAMP:${dtStamp}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:Reunión con ${escapeIcs(ticket.docente_nombre)}`,
+    `DESCRIPTION:${escapeIcs(ticket.respuesta || 'Reunión coordinada mediante DispoDocente.')}`,
+    `ORGANIZER;CN=${escapeIcs(ticket.docente_nombre)}:MAILTO:${ticket.docente_email}`,
+    `ATTENDEE;CUTYPE=INDIVIDUAL;ROLE=REQ-PARTICIPANT;PARTSTAT=ACCEPTED;CN=${escapeIcs(ticket.estudiante_nombre)}:MAILTO:${ticket.estudiante_email}`,
+    'STATUS:CONFIRMED',
+    'END:VEVENT',
+    'END:VCALENDAR',
   ].join('\r\n');
-  res.setHeader('Content-Type', 'text/calendar');
+
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="reunion-${ticket.id}.ics"`);
   res.send(ics);
 });

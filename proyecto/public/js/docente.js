@@ -1,16 +1,17 @@
 // Docente panel logic
 
 function getInitials(n) {
-  return n.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  if (!n) return '?';
+  return n.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 }
 
 function estadoBadge(estado) {
   const map = { pendiente: 'badge-warning', respondido: 'badge-info', resuelto: 'badge-success' };
-  return `<span class="badge ${map[estado] || 'badge-secondary'}">${estado}</span>`;
+  return `<span class="badge ${map[estado] || 'badge-secondary'}">${escapeHtml(estado)}</span>`;
 }
 
 function tipoBadge(tipo) {
-  return `<span class="badge badge-secondary">${tipo}</span>`;
+  return `<span class="badge badge-secondary">${escapeHtml(tipo)}</span>`;
 }
 
 function renderTicket(t, showActions) {
@@ -20,20 +21,31 @@ function renderTicket(t, showActions) {
         <button class="btn btn-primary btn-sm" onclick="openRespuestaModal(${t.id})">Responder</button>
        </div>`
     : '';
-  const respuestaHtml = t.respuesta
-    ? `<div class="ticket-respuesta"><strong>Tu respuesta:</strong> <p style="margin-top:0.3rem">${t.respuesta}</p></div>`
+
+  let meetingMeta = '';
+  if (t.tipo_respuesta === 'reunion' && t.fecha_reunion) {
+    const meetDate = new Date(t.fecha_reunion).toLocaleString('es-CL', { dateStyle: 'short', timeStyle: 'short' });
+    meetingMeta = `<div style="margin-top:0.3rem;font-weight:600;color:var(--primary)">&#x1F4C5; Cita propuesta: ${escapeHtml(meetDate)}</div>`;
+  }
+
+  const respuestaHtml = (t.respuesta || t.tipo_respuesta)
+    ? `<div class="ticket-respuesta">
+        <strong>Tu respuesta:</strong>
+        ${t.respuesta ? `<p style="margin-top:0.3rem">${escapeHtml(t.respuesta)}</p>` : ''}
+        ${meetingMeta}
+       </div>`
     : '';
 
   const perfilExtra = (t.estudiante_carrera || t.estudiante_anio)
-    ? `<div class="ticket-meta">${[t.estudiante_carrera, t.estudiante_anio ? `${t.estudiante_anio} año` : ''].filter(Boolean).join(' — ')}</div>`
+    ? `<div class="ticket-meta">${[t.estudiante_carrera, t.estudiante_anio ? `${t.estudiante_anio} año` : ''].filter(Boolean).map(escapeHtml).join(' — ')}</div>`
     : '';
 
   return `
     <div class="ticket-item">
       <div class="ticket-header">
         <div>
-          <strong>${t.estudiante_nombre}</strong>
-          <div class="ticket-meta">${t.estudiante_email}</div>
+          <strong>${escapeHtml(t.estudiante_nombre)}</strong>
+          <div class="ticket-meta">${escapeHtml(t.estudiante_email)}</div>
           ${perfilExtra}
         </div>
         <div style="display:flex;gap:0.4rem;align-items:center">
@@ -41,8 +53,8 @@ function renderTicket(t, showActions) {
           ${estadoBadge(t.estado)}
         </div>
       </div>
-      <p style="font-size:0.9rem">${t.mensaje || '<em>Sin mensaje</em>'}</p>
-      <div class="ticket-meta" style="margin-top:0.5rem">${fecha}</div>
+      <p style="font-size:0.9rem">${t.mensaje ? escapeHtml(t.mensaje) : '<em>Sin mensaje</em>'}</p>
+      <div class="ticket-meta" style="margin-top:0.5rem">${escapeHtml(fecha)}</div>
       ${respuestaHtml}
       ${actionsHtml}
     </div>
@@ -133,7 +145,7 @@ async function loadHorarios() {
 
   const tags = horarios.map(h =>
     `<span class="horario-tag">
-      ${h.dia} ${h.hora_inicio}-${h.hora_fin}
+      ${escapeHtml(h.dia)} ${escapeHtml(h.hora_inicio)}-${escapeHtml(h.hora_fin)}
       <button class="del-btn" onclick="deleteHorario(${h.id})" title="Eliminar">&times;</button>
     </span>`
   ).join('');
@@ -159,7 +171,7 @@ document.getElementById('btn-add-horario').addEventListener('click', async () =>
 
   if (!res.ok) {
     const data = await res.json();
-    alertEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+    alertEl.innerHTML = `<div class="alert alert-error">${escapeHtml(data.error)}</div>`;
     return;
   }
   alertEl.innerHTML = '';
@@ -220,19 +232,33 @@ function openRespuestaModal(ticketId) {
   document.getElementById('ticket-id-respuesta').value = ticketId;
   document.getElementById('respuesta-alert').innerHTML = '';
   document.getElementById('respuesta-texto').value = '';
+  const fechaInput = document.getElementById('respuesta-fecha');
+  if (fechaInput) fechaInput.value = '';
   document.getElementById('tipo-respuesta').value = 'resuelto';
   updateRespuestaForm('resuelto');
   document.getElementById('respuesta-modal').classList.add('open');
 }
 
 function updateRespuestaForm(tipo) {
-  const group = document.getElementById('respuesta-text-group');
+  const textGroup = document.getElementById('respuesta-text-group');
+  const fechaGroup = document.getElementById('respuesta-fecha-group');
   const label = document.getElementById('respuesta-text-label');
+
   if (tipo === 'resuelto') {
-    group.style.display = 'none';
+    if (textGroup) textGroup.style.display = 'none';
+    if (fechaGroup) fechaGroup.style.display = 'none';
+  } else if (tipo === 'reunion') {
+    if (textGroup) {
+      textGroup.style.display = 'block';
+      label.textContent = 'Detalles de la reunión';
+    }
+    if (fechaGroup) fechaGroup.style.display = 'block';
   } else {
-    group.style.display = 'block';
-    label.textContent = tipo === 'reunion' ? 'Propuesta de reunion' : 'Respuesta';
+    if (textGroup) {
+      textGroup.style.display = 'block';
+      label.textContent = 'Respuesta';
+    }
+    if (fechaGroup) fechaGroup.style.display = 'none';
   }
 }
 
@@ -252,27 +278,38 @@ document.getElementById('submit-respuesta').addEventListener('click', async () =
   const ticketId = document.getElementById('ticket-id-respuesta').value;
   const tipoRespuesta = document.getElementById('tipo-respuesta').value;
   const respuesta = document.getElementById('respuesta-texto').value.trim();
+  const fechaReunion = document.getElementById('respuesta-fecha')?.value || null;
   const alertEl = document.getElementById('respuesta-alert');
+  const submitBtn = document.getElementById('submit-respuesta');
 
   if (tipoRespuesta !== 'resuelto' && !respuesta) {
     alertEl.innerHTML = '<div class="alert alert-error">El texto de respuesta es requerido</div>';
     return;
   }
 
-  const res = await fetch(`/api/tickets/${ticketId}/responder`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tipoRespuesta, respuesta: respuesta || null }),
-  });
+  submitBtn.disabled = true;
 
-  if (!res.ok) {
-    const data = await res.json();
-    alertEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
-    return;
+  try {
+    const res = await fetch(`/api/tickets/${ticketId}/responder`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipoRespuesta, respuesta: respuesta || null, fechaReunion }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json();
+      alertEl.innerHTML = `<div class="alert alert-error">${escapeHtml(data.error)}</div>`;
+      submitBtn.disabled = false;
+      return;
+    }
+
+    document.getElementById('respuesta-modal').classList.remove('open');
+    submitBtn.disabled = false;
+    await loadTickets();
+  } catch (err) {
+    alertEl.innerHTML = '<div class="alert alert-error">Error al enviar la respuesta</div>';
+    submitBtn.disabled = false;
   }
-
-  document.getElementById('respuesta-modal').classList.remove('open');
-  await loadTickets();
 });
 
 // Tabs

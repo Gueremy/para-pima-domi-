@@ -13,6 +13,13 @@ ruvector.db
 test-results.json
 proyecto/test-results.json
 proyecto/test-results/
+*.tmp*
+
+# External / Local dev artifacts
+salmonwise-inventory/
+.claude/
+.claude-flow/
+CLAUDE2.md
 
 # Stray files created by accidental terminal input
 /2

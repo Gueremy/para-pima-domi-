@@ -4,7 +4,10 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "dev": "nodemon server/index.js"
+    "dev": "nodemon server/index.js",
+    "test": "playwright test",
+    "seed:admin": "node ../scripts/seed-admin.js",
+    "seed:demo": "node ../scripts/seed-demo.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

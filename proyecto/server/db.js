@@ -7,11 +7,14 @@ require('dotenv').config();
 const dbPath = path.resolve(__dirname, '..', process.env.DB_PATH || './database.sqlite');
 
 let db = null;
+let inTransaction = false;
 
 function saveDb() {
-  if (!db) return;
+  if (!db || inTransaction) return;
   const data = db.export();
-  fs.writeFileSync(dbPath, Buffer.from(data));
+  const tmpPath = `${dbPath}.tmp-${Date.now()}`;
+  fs.writeFileSync(tmpPath, Buffer.from(data));
+  fs.renameSync(tmpPath, dbPath);
 }
 
 function getDb() {
@@ -19,7 +22,6 @@ function getDb() {
   return db;
 }
 
-// Wrap sql.js to mimic better-sqlite3 synchronous API
 function prepare(sql) {
   return {
     run(...params) {
@@ -46,6 +48,29 @@ function prepare(sql) {
 function exec(sql) {
   db.exec(sql);
   saveDb();
+}
+
+function transaction(fn) {
+  return (...args) => {
+    if (inTransaction) {
+      return fn(...args);
+    }
+    inTransaction = true;
+    db.exec('BEGIN TRANSACTION');
+    try {
+      const result = fn(...args);
+      db.exec('COMMIT');
+      inTransaction = false;
+      saveDb();
+      return result;
+    } catch (err) {
+      try {
+        db.exec('ROLLBACK');
+      } catch (_) {}
+      inTransaction = false;
+      throw err;
+    }
+  };
 }
 
 async function initDb() {
@@ -75,7 +100,12 @@ async function initDb() {
       asignatura      TEXT,
       es_part_time    BOOLEAN DEFAULT 0,
       disponible      BOOLEAN DEFAULT 0,
-      descripcion_pt  TEXT
+      descripcion_pt  TEXT,
+      bio             TEXT,
+      ramos           TEXT,
+      certificados    TEXT,
+      telefono        TEXT,
+      oficina         TEXT
     );
 
     CREATE TABLE IF NOT EXISTS suscripciones (
@@ -94,6 +124,7 @@ async function initDb() {
       estado         TEXT DEFAULT 'pendiente' CHECK(estado IN ('pendiente', 'respondido', 'resuelto')),
       respuesta      TEXT,
       tipo_respuesta TEXT CHECK(tipo_respuesta IN ('resuelto', 'respuesta', 'reunion')),
+      fecha_reunion  DATETIME,
       created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at     DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -107,11 +138,11 @@ async function initDb() {
     );
 
     CREATE TABLE IF NOT EXISTS password_resets (
-      id        INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id   INTEGER REFERENCES users(id),
-      token     TEXT UNIQUE NOT NULL,
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id    INTEGER REFERENCES users(id),
+      token      TEXT UNIQUE NOT NULL,
       expires_at INTEGER NOT NULL,
-      used      INTEGER DEFAULT 0
+      used       INTEGER DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS estudiantes (
@@ -120,18 +151,29 @@ async function initDb() {
       carrera   TEXT,
       anio      TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      sid        TEXT PRIMARY KEY,
+      sess       TEXT NOT NULL,
+      expired_at INTEGER NOT NULL
+    );
   `);
 
-  // Add new columns if they don't exist (migration)
-  const existingCols = db.exec("PRAGMA table_info(docentes)")[0]?.values?.map(r => r[1]) || [];
-  if (!existingCols.includes('bio')) {
+  // Migrations for existing DBs
+  const docenteCols = db.exec("PRAGMA table_info(docentes)")[0]?.values?.map(r => r[1]) || [];
+  if (!docenteCols.includes('bio')) {
     db.exec("ALTER TABLE docentes ADD COLUMN bio TEXT");
     db.exec("ALTER TABLE docentes ADD COLUMN ramos TEXT");
     db.exec("ALTER TABLE docentes ADD COLUMN certificados TEXT");
     db.exec("ALTER TABLE docentes ADD COLUMN telefono TEXT");
     db.exec("ALTER TABLE docentes ADD COLUMN oficina TEXT");
-    saveDb();
   }
+
+  const ticketCols = db.exec("PRAGMA table_info(tickets)")[0]?.values?.map(r => r[1]) || [];
+  if (!ticketCols.includes('fecha_reunion')) {
+    db.exec("ALTER TABLE tickets ADD COLUMN fecha_reunion DATETIME");
+  }
+  saveDb();
 
   await seedData();
 }
@@ -170,12 +212,20 @@ async function seedData() {
 
   insUser.run('juan.estudiante@universidad.cl', hash('est123'), 'Juan Pérez', 'estudiante');
   insUser.run('sofia.alumna@universidad.cl', hash('est123'), 'Sofía Ramírez', 'estudiante');
+
+  // Standard evaluation & QA accounts
+  const dDefault = insUser.run('docente@universidad.cl', hash('Docente123!'), 'Docente Base', 'docente');
+  insDocente.run(dDefault.lastInsertRowid, 'Ingeniería en Informática', 'Bases de Datos', 0, 1, null,
+    'Docente principal de pruebas y demostraciones.', 'Bases de Datos, Redes', 'Magíster', '+56 9 1111 2222', 'Oficina 101');
+  insUser.run('estudiante@universidad.cl', hash('Estudiante123!'), 'Estudiante Base', 'estudiante');
+  insUser.run('admin@universidad.cl', hash('Admin123!'), 'Administrador Base', 'admin');
+  saveDb();
 }
 
-// Expose a db proxy that uses our wrappers
 const dbProxy = {
   prepare,
   exec,
+  transaction,
   pragma: () => {},
 };
 

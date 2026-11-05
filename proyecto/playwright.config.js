@@ -15,6 +15,12 @@ module.exports = defineConfig({
     screenshot: 'only-on-failure',
     video: 'off',
   },
+  webServer: {
+    command: 'node server/index.js',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 15000,
+  },
   projects: [
     {
       name: 'chromium',
