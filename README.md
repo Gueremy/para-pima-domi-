@@ -118,11 +118,11 @@ La recuperación de contraseña está deshabilitada en modo demo. Nunca se devue
 
 ## Despliegue de una sola instancia
 
-El archivo `render.yaml` prepara un servicio Render con disco persistente. **Requiere un plan de cómputo de pago y almacenamiento facturable**; revisa el plan y sus cargos antes de aprobarlo.
+El archivo `render.yaml` prepara una **demo gratuita y desechable** en Render. No tiene disco persistente: las cuentas creadas, tickets y sesiones pueden perderse cuando el servicio se reinicia o se vuelve a desplegar. Los datos de ejemplo se crean de nuevo al arrancar. No la uses para datos reales ni prometas persistencia a visitantes.
 
 1. Ejecuta el servidor desde `proyecto/` con `npm ci --omit=dev` y `npm start` en Node.js 22.
-2. Usa **una réplica** y monta un volumen persistente. Define `DB_PATH` como una ruta absoluta dentro del volumen, por ejemplo `/data/database.sqlite`. El proceso necesita permiso de escritura en ese directorio para crear el archivo temporal y reemplazar la base.
+2. La demo gratuita usa una sola réplica y el archivo SQLite local temporal. Si luego necesitas conservar datos entre despliegues, cambia a un plan de pago con volumen persistente y define `DB_PATH` dentro de él, por ejemplo `/data/database.sqlite`.
 3. Configura `NODE_ENV=production`, `SESSION_SECRET` aleatorio, `ADMIN_PASSWORD` único de al menos 16 caracteres y `DEMO_MODE=true`. Si desactivas el modo demo para habilitar recuperación de contraseña, configura también `APP_BASE_URL` con la URL HTTPS pública y `EMAIL_USER`/`EMAIL_PASS` de una cuenta Gmail compatible con el transporte actual. La contraseña inicial solo se aplica cuando se crea la cuenta admin: si ya existe una base, cámbiala mediante un procedimiento privado antes de publicar.
-4. Comprueba `/ready`, el inicio de sesión y los flujos de estudiante y docente desde la URL pública. Reinicia la instancia y verifica que tickets y sesiones persisten. Realiza y prueba una copia de seguridad del volumen.
+4. Comprueba `/ready`, el inicio de sesión y los flujos de estudiante y docente desde la URL pública. Tras reiniciar, verifica que la demo vuelve a un estado utilizable con cuentas sintéticas.
 
 La aplicación usa `sql.js` en memoria y exporta el archivo SQLite después de cada escritura. No admite varias réplicas compartiendo el mismo archivo. Las pruebas de CI se ejecutan localmente y no sustituyen estas comprobaciones de hosting.
