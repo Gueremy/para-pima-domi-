@@ -90,11 +90,9 @@
             showAlert('request-alert', data.error);
             return;
           }
-          if (data.demoResetUrl) {
-            showAlert('request-alert', `Si el correo existe, recibirás un enlace.<div style="margin-top:0.75rem;padding:0.5rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;font-size:0.85rem"><strong>[Modo Demo Activo]:</strong> <a href="${data.demoResetUrl}" style="color:#15803d;font-weight:bold;text-decoration:underline">Hacer clic aquí para restablecer ahora</a></div>`, 'success');
-          } else {
-            showAlert('request-alert', 'Si el correo existe en nuestro sistema, recibirás un enlace en tu bandeja de entrada.', 'success');
-          }
+          showAlert('request-alert', data.resetDisabled
+            ? 'La recuperación de contraseñas está desactivada en esta demo pública. Usa el acceso rápido de prueba.'
+            : 'Si el correo existe, recibirás un enlace en tu bandeja de entrada.', 'success');
           document.getElementById('request-form').reset();
         });
       }

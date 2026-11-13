@@ -178,6 +178,8 @@ async function initDb() {
   const sessionCols = db.exec("PRAGMA table_info(sessions)")[0]?.values?.map(r => r[1]) || [];
   if (!sessionCols.includes('user_id')) {
     db.exec("ALTER TABLE sessions ADD COLUMN user_id INTEGER");
+    // Legacy sessions cannot be revoked by user ID. Require a fresh login.
+    db.exec("DELETE FROM sessions WHERE user_id IS NULL");
   }
   saveDb();
 

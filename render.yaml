@@ -1,0 +1,26 @@
+# Free, disposable portfolio demo. Its local database resets on service replacement.
+services:
+  - type: web
+    name: dispodocente-demo
+    runtime: node
+    plan: free
+    region: oregon
+    repo: https://github.com/Gueremy/para-pima-domi-
+    branch: main
+    rootDir: proyecto
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /ready
+    autoDeployTrigger: checksPass
+    numInstances: 1
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: NODE_ENV
+        value: production
+      - key: DEMO_MODE
+        value: 'true'
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        generateValue: true

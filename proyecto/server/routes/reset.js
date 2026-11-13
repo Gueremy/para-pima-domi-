@@ -46,6 +46,13 @@ router.post('/request', async (req, res) => {
   if (!email) return res.status(400).json({ error: 'Email requerido' });
 
   const cleanEmail = email.trim().toLowerCase();
+
+  // A public demo has no private mailbox. Never mint a reset token that an
+  // anonymous visitor could obtain through the demo interface or API.
+  if (process.env.DEMO_MODE === 'true') {
+    return res.json({ ok: true, resetDisabled: true });
+  }
+
   const user = db.prepare('SELECT id, nombre FROM users WHERE email = ?').get(cleanEmail);
 
   // Always return 200 to avoid account enumeration
@@ -68,11 +75,7 @@ router.post('/request', async (req, res) => {
 
   sendPasswordReset(cleanEmail, user.nombre, resetUrl).catch(console.warn);
 
-  // In demo mode, surface the link so reviewers can test the full recovery flow without server logs
-  return res.json({
-    ok: true,
-    demoResetUrl: process.env.DEMO_MODE === 'true' ? resetUrl : undefined,
-  });
+  return res.json({ ok: true });
 });
 
 // POST /api/reset/confirm — body: { token, password }
@@ -80,6 +83,9 @@ router.post('/confirm', async (req, res) => {
   const { token, password } = req.body;
   if (!token || !password || password.length < 6) {
     return res.status(400).json({ error: 'Token inválido o contraseña menor a 6 caracteres' });
+  }
+  if (process.env.DEMO_MODE === 'true') {
+    return res.status(403).json({ error: 'La recuperación está desactivada en esta demo pública' });
   }
 
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
