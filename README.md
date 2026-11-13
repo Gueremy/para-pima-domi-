@@ -112,6 +112,8 @@ npm test
 
 ## Demo pública
 
+[Abrir demo de DispoDocente](https://dispodocente-demo-9wlz.onrender.com/). Funciona en el plan gratuito de Render y puede tardar en despertar tras un período sin visitas.
+
 `DEMO_MODE=true` permite entrar como estudiante o docente de prueba sin contraseña. En producción, el acceso rápido al administrador está deshabilitado. Los botones usan únicamente las cuentas sintéticas previstas para la demo.
 
 La recuperación de contraseña está deshabilitada en modo demo. Nunca se devuelve un token de recuperación al navegador. Para probar ese flujo, usa un entorno privado con `DEMO_MODE=false` y correo transaccional configurado.
