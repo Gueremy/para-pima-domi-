@@ -45,11 +45,9 @@ class SQLiteSessionStore extends session.Store {
   }
 
   static revokeUserSessions(userId) {
-    try {
-      if (userId) {
-        db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
-      }
-    } catch (_) {}
+    if (userId) {
+      db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId);
+    }
   }
 
   destroy(sid, callback) {

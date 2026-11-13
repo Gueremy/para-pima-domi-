@@ -1,6 +1,4 @@
 // @ts-check
-const path = require('path');
-const bcrypt = require('bcryptjs');
 const { test, expect, request } = require('@playwright/test');
 
 const BASE = 'http://localhost:3000';
@@ -639,13 +637,13 @@ test.describe('7. Edge Cases', () => {
     await page.request.post(`${BASE}/api/auth/logout`);
   });
 
-  test('7.4 Token de reset inválido devuelve error 400', async ({ page }) => {
+  test('7.4 Contraseña corta en restablecimiento devuelve error 400', async ({ page }) => {
     const res = await page.request.post(`${BASE}/api/reset/confirm`, {
-      data: { token: 'INVALID_TOKEN_XYZ_PLAYWRIGHT', password: 'NewPass123!' },
+      data: { token: 'INVALID_TOKEN_XYZ_PLAYWRIGHT', password: '123' },
     });
     expect(res.status()).toBe(400);
     const body = await res.json();
-    expect(body.error).toMatch(/inválido|expirado/i);
+    expect(body.error).toMatch(/inválido|menor/i);
   });
 
   test('7.5 Contraseña menor a 6 chars en registro devuelve 400', async ({ page }) => {
@@ -829,35 +827,30 @@ test.describe('8.5. Seguridad Crítica y Endurecimiento', () => {
     expect(rData.status).toBe('ready');
   });
 
-  test('8.6.1 (SEC-07) Recorrido completo de recuperación de contraseña', async ({ request }) => {
-    // Register fresh user for reset test
-    const email = `reset${Date.now()}@universidad.cl`;
-    const regRes = await request.post(`${BASE}/api/auth/register`, {
-      data: { email, password: 'InitialPass123!', nombre: 'Reset Test User', rol: 'estudiante' },
+  test('8.6.1 (SEC-07) Demo pública nunca entrega un token de recuperación', async ({ request }) => {
+    const reqRes = await request.post(`${BASE}/api/reset/request`, {
+      data: { email: 'admin@universidad.cl' },
     });
-    expect(regRes.ok()).toBeTruthy();
-
-    const reqRes = await request.post(`${BASE}/api/reset/request`, { data: { email } });
     expect(reqRes.ok()).toBeTruthy();
     const reqData = await reqRes.json();
-    expect(reqData.ok).toBe(true);
-    expect(reqData.demoResetUrl).toBeTruthy();
+    expect(reqData).toEqual({ ok: true, resetDisabled: true });
 
-    const match = reqData.demoResetUrl.match(/token=([a-f0-9]+)/);
-    expect(match).toBeTruthy();
-    const token = match[1];
+    const unknownRes = await request.post(`${BASE}/api/reset/request`, {
+      data: { email: 'unknown@universidad.cl' },
+    });
+    expect(unknownRes.ok()).toBeTruthy();
+    expect(await unknownRes.json()).toEqual(reqData);
 
-    const newPass = 'NuevaClaveSegura123!';
-    const confRes = await request.post(`${BASE}/api/reset/confirm`, { data: { token, password: newPass } });
-    expect(confRes.ok()).toBeTruthy();
+    const confirmRes = await request.post(`${BASE}/api/reset/confirm`, {
+      data: { token: 'any-token', password: 'NuevaClaveSegura123!' },
+    });
+    expect(confirmRes.status()).toBe(403);
 
-    // Old password should fail
-    const oldLogin = await request.post(`${BASE}/api/auth/login`, { data: { email, password: 'InitialPass123!' } });
-    expect(oldLogin.status()).toBe(401);
-
-    // New password should succeed
-    const newLogin = await request.post(`${BASE}/api/auth/login`, { data: { email, password: newPass } });
-    expect(newLogin.ok()).toBeTruthy();
+    const demoLogin = await request.post(`${BASE}/api/auth/demo-login`, {
+      data: { rol: 'estudiante' },
+    });
+    expect(demoLogin.ok()).toBeTruthy();
+    expect((await demoLogin.json()).user.email).toBe('estudiante@universidad.cl');
   });
 
   test('8.6.2 (SEC-08) Sincronización en vivo de rol y revocación inmediata de permisos', async ({ playwright }) => {

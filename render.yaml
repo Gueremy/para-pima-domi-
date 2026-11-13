@@ -1,0 +1,32 @@
+# Review the paid compute and persistent disk charges before approving this Blueprint.
+services:
+  - type: web
+    name: dispodocente-demo
+    runtime: node
+    plan: 0.5c-512mb
+    region: oregon
+    repo: https://github.com/Gueremy/para-pima-domi-
+    branch: main
+    rootDir: proyecto
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /ready
+    autoDeployTrigger: checksPass
+    numInstances: 1
+    disk:
+      name: dispodocente-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: NODE_ENV
+        value: production
+      - key: DEMO_MODE
+        value: 'true'
+      - key: DB_PATH
+        value: /data/database.sqlite
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        generateValue: true

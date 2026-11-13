@@ -25,8 +25,16 @@ if (process.env.NODE_ENV === 'production') {
     console.error('FATAL: Debes configurar un SESSION_SECRET seguro y único en producción.');
     process.exit(1);
   }
-  if (!process.env.APP_BASE_URL) {
-    console.error('FATAL: Debes configurar APP_BASE_URL con la URL canónica en producción.');
+  if (process.env.DEMO_MODE !== 'true' && !process.env.APP_BASE_URL) {
+    console.error('FATAL: Debes configurar APP_BASE_URL con la URL canónica cuando la recuperación de contraseña está activa.');
+    process.exit(1);
+  }
+  if (process.env.DEMO_MODE !== 'true' && (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)) {
+    console.error('FATAL: Debes configurar EMAIL_USER y EMAIL_PASS cuando la recuperación de contraseña está activa.');
+    process.exit(1);
+  }
+  if (!process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD.length < 16 || process.env.ADMIN_PASSWORD === 'Admin123!') {
+    console.error('FATAL: Debes configurar ADMIN_PASSWORD con una clave única de al menos 16 caracteres en producción.');
     process.exit(1);
   }
 }

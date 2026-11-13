@@ -1,7 +1,7 @@
 # DispoDocente — Sistema de Disponibilidad Docente y Consultas Universitarias
 
 [![CI](https://github.com/Gueremy/para-pima-domi-/actions/workflows/ci.yml/badge.svg)](https://github.com/Gueremy/para-pima-domi-/actions)
-[![Node.js](https://img.shields.io/badge/Node.js-v20%20%7C%20v22-green.svg)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-v22-green.svg)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Plataforma full stack diseñada para optimizar la comunicación entre estudiantes y docentes universitarios. Permite consultar la disponibilidad de profesores en tiempo real, filtrar por carrera y asignatura, solicitar atención presencial o escrita mediante un sistema de tickets, y coordinar reuniones con exportación automática a calendarios estándar (`.ics`).
@@ -52,7 +52,7 @@ Plataforma full stack diseñada para optimizar la comunicación entre estudiante
 ## 📦 Puesta en Marcha Local
 
 ### Requisitos
-- Node.js LTS (>= 18.x, recomendado v20 o v22)
+- Node.js 22 LTS
 - npm (>= 9.x)
 
 ### 1. Clonar e Instalar
@@ -89,9 +89,9 @@ La aplicación estará disponible en `http://localhost:3000`.
 |---|---|---|---|
 | **Estudiante** | `juan.estudiante@universidad.cl` | `est123` | Búsqueda con filtros, envío de tickets, seguimiento de respuestas, suscripciones. |
 | **Docente** | `ana.garcia@universidad.cl` | `docente123` | Conmutador de disponibilidad, atención de tickets, propuesta de reuniones presenciales. |
-| **Administrador** | `admin@universidad.cl` | `Admin123!` | Panel de métricas globales, cambio de roles, registro de docentes, auditoría de usuarios. |
+| **Administrador local** | `admin@universidad.cl` | `Admin123!` | Solo para desarrollo local; en producción define `ADMIN_PASSWORD` único. |
 
-> **Evaluación en 1 Clic:** En `http://localhost:3000/login.html` se incluye una barra de acceso rápido que permite ingresar instantáneamente con cualquiera de los roles de prueba sin necesidad de tipear credenciales.
+> **Evaluación en 1 clic:** En `http://localhost:3000/login.html` se incluye acceso rápido a los roles de prueba. En producción, el acceso rápido al administrador está deshabilitado por defecto.
 
 ---
 
@@ -109,3 +109,20 @@ npm test
 - **Flujo de Tickets:** Creación de ticket presencial y escrito, límite de tickets pendientes por docente, respuesta del docente, exportación segura de calendario iCal (`.ics`).
 - **Disponibilidad & Perfil:** Actualización reactiva de badges, edición de horarios y perfil docente, persistencia tras reinicio.
 - **Panel Administrativo:** Consulta de estadísticas, cambio de roles con sincronización de esquemas, y protección contra auto-eliminación de cuentas admin.
+
+## Demo pública
+
+`DEMO_MODE=true` permite entrar como estudiante o docente de prueba sin contraseña. En producción, el acceso rápido al administrador está deshabilitado. Los botones usan únicamente las cuentas sintéticas previstas para la demo.
+
+La recuperación de contraseña está deshabilitada en modo demo. Nunca se devuelve un token de recuperación al navegador. Para probar ese flujo, usa un entorno privado con `DEMO_MODE=false` y correo transaccional configurado.
+
+## Despliegue de una sola instancia
+
+El archivo `render.yaml` prepara un servicio Render con disco persistente. **Requiere un plan de cómputo de pago y almacenamiento facturable**; revisa el plan y sus cargos antes de aprobarlo.
+
+1. Ejecuta el servidor desde `proyecto/` con `npm ci --omit=dev` y `npm start` en Node.js 22.
+2. Usa **una réplica** y monta un volumen persistente. Define `DB_PATH` como una ruta absoluta dentro del volumen, por ejemplo `/data/database.sqlite`. El proceso necesita permiso de escritura en ese directorio para crear el archivo temporal y reemplazar la base.
+3. Configura `NODE_ENV=production`, `SESSION_SECRET` aleatorio, `ADMIN_PASSWORD` único de al menos 16 caracteres y `DEMO_MODE=true`. Si desactivas el modo demo para habilitar recuperación de contraseña, configura también `APP_BASE_URL` con la URL HTTPS pública y `EMAIL_USER`/`EMAIL_PASS` de una cuenta Gmail compatible con el transporte actual. La contraseña inicial solo se aplica cuando se crea la cuenta admin: si ya existe una base, cámbiala mediante un procedimiento privado antes de publicar.
+4. Comprueba `/ready`, el inicio de sesión y los flujos de estudiante y docente desde la URL pública. Reinicia la instancia y verifica que tickets y sesiones persisten. Realiza y prueba una copia de seguridad del volumen.
+
+La aplicación usa `sql.js` en memoria y exporta el archivo SQLite después de cada escritura. No admite varias réplicas compartiendo el mismo archivo. Las pruebas de CI se ejecutan localmente y no sustituyen estas comprobaciones de hosting.
